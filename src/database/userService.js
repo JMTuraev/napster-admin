@@ -10,11 +10,11 @@ import db from './db.js'
 export function addOrUpdateUser(mac) {
   const now = new Date().toISOString()
 
-  const existingUser = db.prepare(`
-    SELECT * FROM users WHERE mac = ?
-  `).get(mac)
+  // Foydalanuvchini bazada tekshirish
+  const existingUser = db.prepare('SELECT * FROM users WHERE mac = ?').get(mac)
 
   if (!existingUser) {
+    // Yangi foydalanuvchini qo‘shish
     db.prepare(`
       INSERT INTO users (mac, number, status, created_at)
       VALUES (?, NULL, 'online', ?)
@@ -22,6 +22,7 @@ export function addOrUpdateUser(mac) {
 
     return { status: 'added', mac }
   } else {
+    // Foydalanuvchining statusini yangilash
     db.prepare(`
       UPDATE users SET status = 'online' WHERE mac = ?
     `).run(mac)
@@ -31,11 +32,10 @@ export function addOrUpdateUser(mac) {
 }
 
 /**
- * Barcha foydalanuvchilar ro‘yxati
- * @returns {array} - foydalanuvchilar
+ * Barcha foydalanuvchilar ro‘yxatini olish
+ * @returns {array} - foydalanuvchilar ro‘yxati
  */
 export function getAllUsers() {
-  return db.prepare(`
-    SELECT * FROM users ORDER BY number ASC
-  `).all()
+  // Foydalanuvchilarni olish va tartiblash (number bo‘yicha)
+  return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
 }
