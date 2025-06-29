@@ -3,9 +3,12 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// 📦 DB: better-sqlite3 + CRUD funksiyalari
+import db from './src/database/db.js'
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
-    kiosk: false,                  // 🟢 KIOSK MODE
+    kiosk: false,
     alwaysOnTop: false,
     frame: true,
     fullscreen: false,
@@ -18,7 +21,7 @@ function createWindow() {
     }
   })
 
-  // ❗ TEST REJIM: ESC bosilsa, kiosk mode'dan chiqadi (faqat dev rejimda)
+  // 🔓 ESC bosilsa kiosk'dan chiqish (dev test)
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'Escape') {
       console.log('🔓 ESC bosildi – kiosk mode off');
@@ -39,6 +42,30 @@ function createWindow() {
   }
 }
 
+// 🧠 IPC - foydalanuvchilar bilan ishlash
+ipcMain.handle('add-user', (event, user) => {
+  const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
+  const now = new Date().toISOString()
+
+  if (!exists) {
+    db.prepare(`
+      INSERT INTO users (mac, name, status, created_at)
+      VALUES (?, ?, ?, ?)
+    `).run(user.mac, user.name, user.status, now)
+    return { status: 'added', user }
+  } else {
+    db.prepare(`
+      UPDATE users SET name = ?, status = ? WHERE mac = ?
+    `).run(user.name, user.status, user.mac)
+    return { status: 'updated', user }
+  }
+})
+
+ipcMain.handle('get-users', () => {
+  return db.prepare('SELECT * FROM users').all()
+})
+
+// App start
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
 
