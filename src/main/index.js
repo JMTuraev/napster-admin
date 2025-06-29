@@ -3,7 +3,7 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { startSocketServer } from './socketServer.js'
-import db from '../database/db.js'
+import { db } from '../database/db.js'
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -11,11 +11,13 @@ function createWindow() {
     alwaysOnTop: false,
     frame: true,
     fullscreen: false,
-    closable: false,
+    closable: true,
     autoHideMenuBar: false,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
+      contextIsolation: true,
+      nodeIntegration: false,
       sandbox: false
     }
   })
@@ -87,15 +89,19 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  startSocketServer() // socket.io server ishga tushdi
+  // 🧠 SOCKET SERVER START
+  startSocketServer()
+
+  // 🪟 ASOSIY OYNA
   createWindow()
 
+  // 🔄 MacOS uchun activate
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
 })
 
-// ❌ Yopilganda chiqish
+// ❌ Barcha oynalar yopilganda chiqish
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()

@@ -41,6 +41,7 @@ function getMacAddress() {
 const api = {
   socket: {
     on: (...args) => socket.on(...args),
+     once: (...args) => socket.once(...args), 
     off: (...args) => socket.off(...args),
     emit: (...args) => socket.emit(...args),
     connected: () => socket.connected,

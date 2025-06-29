@@ -1,6 +1,4 @@
-// src/database/userService.js
-
-import db from './db.js'
+import { db } from './db.js'
 
 /**
  * Foydalanuvchini qo‘shish yoki yangilash
