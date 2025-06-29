@@ -1,6 +1,9 @@
 import { createServer } from 'http'
 import { Server } from 'socket.io'
 
+// 📦 DB funksiyasi (agar mavjud bo‘lsa)
+import { addOrUpdateUser } from './src/database/userService.js' // yo‘lingizni moslang
+
 const httpServer = createServer()
 const io = new Server(httpServer, {
   cors: {
@@ -11,11 +14,16 @@ const io = new Server(httpServer, {
 io.on('connection', (socket) => {
   console.log('🔌 Yangi ulanish:', socket.id)
 
-  // admin status o‘zgartirganda
+  // ✅ Foydalanuvchidan MAC bilan yangi user kelganda
+  socket.on('new-user', (user) => {
+    console.log('📥 Yangi user keldi:', user)
+    const result = addOrUpdateUser(user)
+    console.log('💾 DBga yozildi:', result)
+  })
+
+  // 🔄 Admin paneldan status o‘zgartirish
   socket.on('status-update', (newStatus) => {
     console.log('📤 Admindan status:', newStatus)
-
-    // barcha boshqa clientlarga yuboramiz (masalan, userlarga)
     socket.broadcast.emit('status-update', newStatus)
   })
 })

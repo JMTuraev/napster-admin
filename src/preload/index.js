@@ -1,7 +1,10 @@
+// src/preload/index.js
+
 import { contextBridge } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { exec } from 'child_process'
 import { io } from 'socket.io-client'
+import { networkInterfaces } from 'os'
 
 // 📡 Socket ulanish (port 3000)
 const socket = io('http://127.0.0.1:3000')
@@ -21,7 +24,20 @@ function runGame(path) {
   })
 }
 
-// 🧠 API obyekt
+// 🧠 MAC manzilni olish funksiyasi
+function getMacAddress() {
+  const nets = networkInterfaces()
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      if (!net.internal && net.mac && net.mac !== '00:00:00:00:00:00') {
+        return net.mac
+      }
+    }
+  }
+  return '00:00:00:00:00:00'
+}
+
+// 🧠 API obyekt (renderer uchun)
 const api = {
   socket: {
     on: (...args) => socket.on(...args),
@@ -30,7 +46,8 @@ const api = {
     connected: () => socket.connected,
     id: () => socket.id
   },
-  runGame
+  runGame,
+  getMac: () => getMacAddress()
 }
 
 // 🔐 Renderer’ga API’larni ulash

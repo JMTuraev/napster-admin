@@ -1,23 +1,41 @@
+// src/database/userService.js
+
 import db from './db.js'
 
-export function addOrUpdateUser(user) {
-  const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
+/**
+ * Foydalanuvchini qo‘shish yoki yangilash
+ * @param {string} mac - MAC address
+ * @returns {object} - { status, mac }
+ */
+export function addOrUpdateUser(mac) {
   const now = new Date().toISOString()
 
-  if (!exists) {
+  const existingUser = db.prepare(`
+    SELECT * FROM users WHERE mac = ?
+  `).get(mac)
+
+  if (!existingUser) {
     db.prepare(`
-      INSERT INTO users (mac, name, status, created_at)
-      VALUES (?, ?, ?, ?)
-    `).run(user.mac, user.name, user.status, now)
-    return { status: 'added', user }
+      INSERT INTO users (mac, number, status, created_at)
+      VALUES (?, NULL, 'online', ?)
+    `).run(mac, now)
+
+    return { status: 'added', mac }
   } else {
     db.prepare(`
-      UPDATE users SET name = ?, status = ? WHERE mac = ?
-    `).run(user.name, user.status, user.mac)
-    return { status: 'updated', user }
+      UPDATE users SET status = 'online' WHERE mac = ?
+    `).run(mac)
+
+    return { status: 'updated', mac }
   }
 }
 
+/**
+ * Barcha foydalanuvchilar ro‘yxati
+ * @returns {array} - foydalanuvchilar
+ */
 export function getAllUsers() {
-  return db.prepare('SELECT * FROM users').all()
+  return db.prepare(`
+    SELECT * FROM users ORDER BY number ASC
+  `).all()
 }
