@@ -8,7 +8,7 @@ export function startSocketServer() {
 
   const io = new Server(httpServer, {
     cors: {
-      origin: '*', // kerak bo‘lsa aniq frontend domenni yozing
+      origin: '*', // kerak bo‘lsa frontend domenini yozing
     },
   })
 
@@ -23,4 +23,6 @@ export function startSocketServer() {
   httpServer.listen(3000, () => {
     console.log('🟢 Socket server ishlayapti: http://localhost:3000')
   })
+
+  return io // ✅ QAYTARAMIZ – bu muhim!
 }

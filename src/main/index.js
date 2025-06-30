@@ -4,6 +4,11 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { startSocketServer } from './socketServer.js'
 import { db } from '../database/db.js'
+import {
+  runGameHandler,
+  checkPathExistsHandler,
+  handleGameEvents
+} from './gameHandlers.js'
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -22,7 +27,6 @@ function createWindow() {
     }
   })
 
-  // 🔓 ESC bosilsa kiosk'dan chiqish
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'Escape') {
       console.log('🔓 ESC bosildi – kiosk mode off')
@@ -30,13 +34,11 @@ function createWindow() {
     }
   })
 
-  // 🔗 Tashqi linklar brauzerda ochilsin
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
-  // 🔃 Renderer yuklash
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     mainWindow.webContents.openDevTools()
@@ -48,12 +50,9 @@ function createWindow() {
 //
 // 📡 IPC HANDLERS
 //
-
-// 🟢 User qo‘shish yoki statusini yangilash
 ipcMain.handle('add-user', (event, user) => {
   const now = new Date().toISOString()
   const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
-
   const defaultStatus = 'online'
 
   if (!exists) {
@@ -72,10 +71,13 @@ ipcMain.handle('add-user', (event, user) => {
   }
 })
 
-// 🟢 Barcha foydalanuvchilarni olish
 ipcMain.handle('get-users', () => {
   return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
 })
+
+// 🎮 O‘yin IPC handlerlari
+ipcMain.handle('run-game', runGameHandler)
+ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
 //
 // 🚀 App ishga tushishi
@@ -90,7 +92,11 @@ app.whenReady().then(() => {
   ipcMain.on('ping', () => console.log('pong'))
 
   // 🧠 SOCKET SERVER START
-  startSocketServer()
+  const io = startSocketServer()
+  io.on('connection', (socket) => {
+    console.log('📡 Yangi client ulandi')
+    handleGameEvents(socket, io) // 🎯 Game socket eventlar
+  })
 
   // 🪟 ASOSIY OYNA
   createWindow()
@@ -101,7 +107,6 @@ app.whenReady().then(() => {
   })
 })
 
-// ❌ Barcha oynalar yopilganda chiqish
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
