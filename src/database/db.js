@@ -9,13 +9,33 @@ if (!existsSync(dbDir)) mkdirSync(dbDir)
 const dbPath = join(dbDir, 'napster.db')
 const db = new Database(dbPath)
 
+// ✅ levels jadvali (STATUSLAR)
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS levels (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT UNIQUE NOT NULL,
+    is_active BOOLEAN DEFAULT 1
+  )
+`).run()
+
+const defaultLevels = ['Standard', 'Silver', 'Gold', 'Platinum', 'Diamond']
+const insert = db.prepare(`INSERT OR IGNORE INTO levels (name, is_active) VALUES (?, 1)`)
+
+for (const level of defaultLevels) {
+  insert.run(level)
+}
+
+console.log('✅ levels jadvali va default darajalar tayyor')
+
 // ✅ Jadval yaratishlar
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     mac TEXT PRIMARY KEY,
     number TEXT UNIQUE,
     status TEXT DEFAULT 'offline',
-    created_at TEXT
+    created_at TEXT,
+    level_id INTEGER,
+    FOREIGN KEY (level_id) REFERENCES levels(id)
   )
 `).run()
 
@@ -61,7 +81,7 @@ export function getAllGames() {
   return db.prepare(`SELECT * FROM games`).all()
 }
 
-// 👤 Userlar funksiyasi (Agar kerak bo‘lsa boshqa faylda import qilinadi)
+// 👤 Userlar funksiyasi (bazaviy)
 export function addOrUpdateUser(mac) {
   const now = new Date().toISOString()
 
@@ -69,8 +89,8 @@ export function addOrUpdateUser(mac) {
 
   if (!existingUser) {
     db.prepare(`
-      INSERT INTO users (mac, number, status, created_at)
-      VALUES (?, NULL, 'online', ?)
+      INSERT INTO users (mac, number, status, created_at, level_id)
+      VALUES (?, NULL, 'online', ?, NULL)
     `).run(mac, now)
 
     return { status: 'added', mac }
@@ -84,8 +104,13 @@ export function addOrUpdateUser(mac) {
 }
 
 export function getAllUsers() {
-  return db.prepare(`SELECT * FROM users ORDER BY number ASC`).all()
+  return db.prepare(`
+    SELECT users.*, levels.name AS level_name
+    FROM users
+    LEFT JOIN levels ON users.level_id = levels.id
+    ORDER BY number ASC
+  `).all()
 }
 
-// 📤 Baza obyektining o‘zi (Agar kerak bo‘lsa)
+// 📤 Export baza obyekti
 export { db }

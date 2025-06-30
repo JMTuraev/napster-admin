@@ -12,15 +12,15 @@ export function addOrUpdateUser(mac) {
   const existingUser = db.prepare('SELECT * FROM users WHERE mac = ?').get(mac)
 
   if (!existingUser) {
-    // Yangi foydalanuvchini qo‘shish
+    // Yangi foydalanuvchini qo‘shish — level_id kiritilishi shart!
     db.prepare(`
-      INSERT INTO users (mac, number, status, created_at)
-      VALUES (?, NULL, 'online', ?)
+      INSERT INTO users (mac, number, status, created_at, level_id)
+      VALUES (?, NULL, 'online', ?, NULL)
     `).run(mac, now)
 
     return { status: 'added', mac }
   } else {
-    // Foydalanuvchining statusini yangilash
+    // Mavjud foydalanuvchini faqat statusini yangilash
     db.prepare(`
       UPDATE users SET status = 'online' WHERE mac = ?
     `).run(mac)
@@ -34,6 +34,11 @@ export function addOrUpdateUser(mac) {
  * @returns {array} - foydalanuvchilar ro‘yxati
  */
 export function getAllUsers() {
-  // Foydalanuvchilarni olish va tartiblash (number bo‘yicha)
-  return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
+  // Agar sizga daraja nomi ham kerak bo‘lsa:
+  return db.prepare(`
+    SELECT users.*, levels.name AS level_name
+    FROM users
+    LEFT JOIN levels ON users.level_id = levels.id
+    ORDER BY number ASC
+  `).all()
 }

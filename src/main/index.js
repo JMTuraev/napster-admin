@@ -9,6 +9,7 @@ import {
   checkPathExistsHandler,
   handleGameEvents
 } from './gameHandlers.js'
+import './statusHandlers.js' 
 
 function createWindow() {
   const mainWindow = new BrowserWindow({

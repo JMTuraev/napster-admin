@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import Games from './pages/games/Games'
-import Timer from './pages/Timer'
+import Timer from './pages/timer/Timer'
 import Stats from './pages/Stats'
 import Bookings from './pages/Bookings'
 import Bar from './pages/Bar'
