@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import LevelPrice from './LevelPrice'
 
 const HOURLY_PRICE = 6000 // so‘m
 const getTimeLeft = (start, duration) => {
@@ -34,7 +35,13 @@ export default function Timer() {
   return (
     <div className="p-6 space-y-4">
       <h1 className="text-2xl font-bold">🕒 Timer Paneli</h1>
-      <div className="text-lg font-semibold text-gray-700">💰 1 soat = {HOURLY_PRICE.toLocaleString()} so‘m</div>
+      
+          <div className="p-4">
+      <h1 className="text-xl font-bold mb-4">⏱ Timer</h1>
+
+      {/* Narxlar komponenti */}
+      <LevelPrice />
+    </div>
 
       <table className="w-full table-auto border-collapse border border-gray-300 mt-4">
         <thead className="bg-gray-100">

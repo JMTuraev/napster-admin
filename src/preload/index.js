@@ -1,6 +1,6 @@
 // src/preload/index.js
 
-import { contextBridge } from 'electron'
+import { contextBridge, ipcRenderer } from 'electron'
 import { electronAPI } from '@electron-toolkit/preload'
 import { exec } from 'child_process'
 import { io } from 'socket.io-client'
@@ -41,14 +41,15 @@ function getMacAddress() {
 const api = {
   socket: {
     on: (...args) => socket.on(...args),
-     once: (...args) => socket.once(...args), 
+    once: (...args) => socket.once(...args),
     off: (...args) => socket.off(...args),
     emit: (...args) => socket.emit(...args),
     connected: () => socket.connected,
     id: () => socket.id
   },
   runGame,
-  getMac: () => getMacAddress()
+  getMac: () => getMacAddress(),
+  invoke: (...args) => ipcRenderer.invoke(...args) // ✅ BU QO‘SHILDI
 }
 
 // 🔐 Renderer’ga API’larni ulash

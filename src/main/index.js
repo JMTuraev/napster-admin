@@ -9,7 +9,8 @@ import {
   checkPathExistsHandler,
   handleGameEvents
 } from './gameHandlers.js'
-import './statusHandlers.js' 
+import './statusHandlers.js'
+import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -28,6 +29,7 @@ function createWindow() {
     }
   })
 
+  // 🔓 ESC bosilganda kioskdan chiqish
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'Escape') {
       console.log('🔓 ESC bosildi – kiosk mode off')
@@ -35,11 +37,13 @@ function createWindow() {
     }
   })
 
+  // 🌐 Tashqi linklarni brauzerda ochish
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
+  // 🔄 Renderer yuklash (dev yoki prod)
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     mainWindow.webContents.openDevTools()
@@ -76,12 +80,12 @@ ipcMain.handle('get-users', () => {
   return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
 })
 
-// 🎮 O‘yin IPC handlerlari
+// 🎮 O‘yinlar bilan ishlovchi IPC handlerlar
 ipcMain.handle('run-game', runGameHandler)
 ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
 //
-// 🚀 App ishga tushishi
+// 🚀 App ishga tushganda
 //
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
@@ -96,16 +100,19 @@ app.whenReady().then(() => {
   const io = startSocketServer()
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
-    handleGameEvents(socket, io) // 🎯 Game socket eventlar
+    handleGameEvents(socket, io)
   })
 
-  // 🪟 ASOSIY OYNA
+  // 🪟 Asosiy oyna yaratish
   createWindow()
 
-  // 🔄 MacOS uchun activate
+  // 🔁 MacOS uchun activate
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
+
+  // 🔌 LevelPrice IPC handlerlarni ro‘yxatdan o‘tkazish
+  registerLevelPriceHandlers()
 })
 
 app.on('window-all-closed', () => {
