@@ -1,25 +1,45 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 
-export default function AddGames() {
+export default function AddGames({ onGameAdded }) {
   const [path, setPath] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fallbackTimer, setFallbackTimer] = useState(null)
+
+  useEffect(() => {
+    const handleResult = (res) => {
+      clearTimeout(fallbackTimer) // ⛔ Fallbackni to‘xtatamiz
+      setLoading(false)
+
+      if (res.status === 'exists') {
+        alert('⚠️ Bu path allaqachon mavjud:\n' + res.path)
+      } else if (res.status === 'error') {
+        alert('❌ Xatolik:\n' + res.message)
+      } else if (res.status === 'added') {
+        alert('✅ O‘yin muvaffaqiyatli qo‘shildi:\n' + res.game.name)
+        setPath('')
+        onGameAdded?.()
+      }
+    }
+
+    window.api.socket.on('game-add-result', handleResult)
+
+    return () => {
+      window.api.socket.off('game-add-result', handleResult)
+    }
+  }, [fallbackTimer, onGameAdded])
 
   const handleAddGame = () => {
-    if (!path.trim()) return
+    const trimmedPath = path.trim()
+    if (!trimmedPath) return alert('❗️ Path kiritilmadi')
+
     setLoading(true)
+    window.api.socket.emit('add-game', { path: trimmedPath })
 
-    // ✅ Yuborilayotgan qiymat object holatida bo‘lishi kerak
-    window.api.socket.emit('add-game', { path })
-
-    // 🟢 Faqat log uchun, backenddan success bo‘lsa 'new-game' eventi keladi
-    window.api.socket.once('new-game', (game) => {
-      console.log('✅ O‘yin qo‘shildi:', game)
+    // ⏳ 5 sekund kutamiz, agar server javob bermasa loadingni to‘xtatamiz
+    const timer = setTimeout(() => {
       setLoading(false)
-      setPath('') // 🔄 inputni tozalash
-    })
-
-    // ❌ Fallback: agar 5 sekund ichida javob kelmasa loadingni to‘xtatish
-    setTimeout(() => setLoading(false), 5000)
+    }, 5000)
+    setFallbackTimer(timer)
   }
 
   return (
@@ -31,7 +51,7 @@ export default function AddGames() {
           value={path}
           onChange={(e) => setPath(e.target.value)}
           className="px-2 py-1 border rounded w-1/2"
-          placeholder="O‘yin EXE yo‘lini kiriting"
+          placeholder="C:\\Games\\GTA\\gta_sa.exe"
         />
         <button
           onClick={handleAddGame}
@@ -43,7 +63,7 @@ export default function AddGames() {
       </div>
 
       {loading && (
-        <div className="text-lg text-gray-300">
+        <div className="text-lg text-gray-400">
           ⏳ <span className="animate-pulse">Tekshirilmoqda...</span>
         </div>
       )}

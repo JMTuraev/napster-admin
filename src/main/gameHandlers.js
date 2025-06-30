@@ -1,11 +1,8 @@
 import fs from 'fs'
 import { execFile } from 'child_process'
-import { addGame, getAllGames } from '../database/db.js'
+import { addGame, getAllGames, db } from '../database/db.js'
 import { basename } from 'path'
 
-//
-// 🌐 SOCKET EVENTLAR (Admin panel orqali ishlaydi)
-//
 export function handleGameEvents(socket, io) {
   // 🟢 O‘yin qo‘shish
   socket.on('add-game', (data) => {
@@ -15,17 +12,30 @@ export function handleGameEvents(socket, io) {
       }
 
       const path = data.path.trim()
+      if (!path.includes('\\') || !path.toLowerCase().includes('.exe')) {
+        throw new Error('Path noto‘g‘ri: unda .exe yoki \\ belgisi yo‘q')
+      }
+
+      const allGames = getAllGames()
+      const alreadyExists = allGames.some((g) => g.path === path)
+      if (alreadyExists) {
+        console.log('⚠️ O‘yin oldin qo‘shilgan:', path)
+        socket.emit('game-add-result', { status: 'exists', path })
+        return
+      }
+
       const exe = basename(path)
       const name = exe.replace('.exe', '')
-
       const game = { name, exe, path }
 
       addGame(game)
       console.log('✅ O‘yin qo‘shildi:', game)
 
       io.emit('new-game', game)
+      socket.emit('game-add-result', { status: 'added', game })
     } catch (err) {
-      console.error('❌ O‘yin DB saqlashda xatolik:', err.message)
+      console.error('❌ O‘yin qo‘shishda xato:', err.message)
+      socket.emit('game-add-result', { status: 'error', message: err.message })
     }
   })
 
@@ -38,11 +48,24 @@ export function handleGameEvents(socket, io) {
       console.error('❌ O‘yinlar olishda xatolik:', err.message)
     }
   })
+
+  // 🗑 O‘yinni o‘chirish
+  socket.on('delete-game', (id) => {
+    if (!id) return
+    try {
+      db.prepare('DELETE FROM games WHERE id = ?').run(id)
+      console.log('🗑 O‘yin o‘chirildi:', id)
+
+      const updated = getAllGames()
+      io.emit('games', updated)
+      socket.emit('game-deleted') // frontend yangilanishi uchun
+    } catch (err) {
+      console.error('❌ O‘yin o‘chirishda xatolik:', err.message)
+    }
+  })
 }
 
-//
-// ⚡️ IPCMain handlerlar (Electron tomonidan chaqiriladi)
-//
+// IPC orqali ishlovchilar
 export async function runGameHandler(event, exePath) {
   return new Promise((resolve, reject) => {
     execFile(exePath, (error) => {
