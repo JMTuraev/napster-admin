@@ -34,15 +34,30 @@ export function handleUserEvents(socket, io) {
     }
   })
 
-  // 🔄 Timer sahifasidan: barcha userlarni olish
-  socket.on('get-users', () => {
-    try {
-      const users = db.prepare('SELECT * FROM users').all()
-      socket.emit('users', users)
-    } catch (err) {
-      console.error('❌ Foydalanuvchilarni olishda xatolik:', err.message || err)
-    }
-  })
+// 🔄 Timer sahifasidan: barcha userlarni olish
+socket.on('get-users', () => {
+  try {
+    const users = db.prepare('SELECT * FROM users').all()
+
+    const result = users.map((user) => {
+      const timer = db.prepare(`
+        SELECT * FROM timers 
+        WHERE mac = ? AND status = 'running' 
+        ORDER BY id DESC LIMIT 1
+      `).get(user.mac)
+
+      return {
+        ...user,
+        ...(timer || {}) // timer bo‘lsa qo‘shiladi
+      }
+    })
+
+    socket.emit('users', result)
+  } catch (err) {
+    console.error('❌ Foydalanuvchilarni olishda xatolik:', err.message || err)
+  }
+})
+
 }
 
 /**

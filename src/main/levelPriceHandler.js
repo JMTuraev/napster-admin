@@ -4,27 +4,48 @@ import { ipcMain } from 'electron'
 import {
   getAllLevelPrices,
   insertOrUpdatePrice,
-  getUsedLevelPrices // 🔥 yangi funksiya ishlatilayotgan level'lar uchun
+  getUsedLevelPrices
 } from '../database/levelPrices.js'
 
 /**
- * 💼 Level narxlari bilan bog‘liq barcha IPC handlerlar shu yerda
+ * 💼 Level narxlari bilan bog‘liq barcha IPC handlerlar shu yerda ro‘yxatdan o‘tkaziladi
  */
 export function registerLevelPriceHandlers() {
-  // 🔄 Barcha level'lar bo‘yicha narxlar
-  ipcMain.handle('get-level-prices', () => {
-    return getAllLevelPrices()
-  })
-
-  // 🔄 Faqat ishlatilayotgan level'lar bo‘yicha narxlar
-  ipcMain.handle('get-used-level-prices', () => {
-    return getUsedLevelPrices()
-  })
-
-  // 💾 Narx qo‘shish yoki yangilash
-  ipcMain.handle('update-level-price', (event, { level_id, price }) => {
+  /**
+   * 🔄 1. Barcha level'lar bo‘yicha narxlar (admin uchun)
+   * Frontendda: window.api.invoke('get-level-prices')
+   */
+  ipcMain.handle('get-level-prices', async () => {
     try {
-      insertOrUpdatePrice(level_id, price)
+      const result = await getAllLevelPrices()
+      return result
+    } catch (err) {
+      console.error('❌ get-level-prices xatolik:', err)
+      return []
+    }
+  })
+
+  /**
+   * 🔄 2. Faqat ishlatilayotgan level_id lar bo‘yicha narxlar
+   * Frontendda: window.api.invoke('get-used-level-prices')
+   */
+  ipcMain.handle('get-used-level-prices', async () => {
+    try {
+      const result = await getUsedLevelPrices()
+      return result
+    } catch (err) {
+      console.error('❌ get-used-level-prices xatolik:', err)
+      return []
+    }
+  })
+
+  /**
+   * 💾 3. Narx qo‘shish yoki yangilash
+   * Frontendda: window.api.invoke('update-level-price', { level_id, price })
+   */
+  ipcMain.handle('update-level-price', async (event, { level_id, price }) => {
+    try {
+      await insertOrUpdatePrice(level_id, price)
       return { success: true }
     } catch (err) {
       console.error('❌ Narx yangilashda xatolik:', err)

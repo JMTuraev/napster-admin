@@ -2,15 +2,19 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { startSocketServer } from './socketServer.js'
+
 import { db } from '../database/db.js'
+import { startSocketServer } from './socketServer.js'
 import {
   runGameHandler,
   checkPathExistsHandler,
   handleGameEvents
 } from './gameHandlers.js'
+
 import './statusHandlers.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
+import { registerTimerHandlers } from './timerHandler.js' // ✅ TIMER IPC handlerlari
+import { initTimerTable } from '../database/timer.js'    // ✅ TIMER jadval yaratish
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -53,7 +57,7 @@ function createWindow() {
 }
 
 //
-// 📡 IPC HANDLERS
+// 📡 IPC HANDLERLAR
 //
 ipcMain.handle('add-user', (event, user) => {
   const now = new Date().toISOString()
@@ -85,7 +89,7 @@ ipcMain.handle('run-game', runGameHandler)
 ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
 //
-// 🚀 App ishga tushganda
+// 🚀 Dastur ishga tushganda
 //
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
@@ -96,27 +100,29 @@ app.whenReady().then(() => {
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  // 🧠 SOCKET SERVER START
+  // 🧠 SOCKET SERVER
   const io = startSocketServer()
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
     handleGameEvents(socket, io)
   })
 
-  // 🪟 Asosiy oyna yaratish
+  // 📊 Jadval yaratishlar (bir martalik)
+  initTimerTable()
+
+  // 📡 IPC Handlerlarni ro‘yxatdan o‘tkazish
+  registerLevelPriceHandlers()
+  registerTimerHandlers()
+
+  // 🪟 Oynani ishga tushurish
   createWindow()
 
-  // 🔁 MacOS uchun activate
+  // 🖥 MacOS uchun
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })
-
-  // 🔌 LevelPrice IPC handlerlarni ro‘yxatdan o‘tkazish
-  registerLevelPriceHandlers()
 })
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+  if (process.platform !== 'darwin') app.quit()
 })
