@@ -48,10 +48,12 @@ export default function ComputersTable() {
         let remainingMs = duration * 1000 - elapsedMs
 
         let dynamicPrice = 0
-        if (mode === 'money' || mode === 'vip') {
-          const elapsedMinutes = elapsedMs / 1000 / 60
-          dynamicPrice = Math.floor(elapsedMinutes * pricePerMinute)
-        }
+if ((mode === 'money' || mode === 'vip') && elapsedMs < duration * 1000) {
+  const elapsedMinutes = elapsedMs / 1000 / 60
+  dynamicPrice = Math.floor(elapsedMinutes * pricePerMinute)
+} else if (elapsedMs >= duration * 1000) {
+  dynamicPrice = Math.floor(duration / 60 * pricePerMinute)
+}
 
         return {
           ...user,
