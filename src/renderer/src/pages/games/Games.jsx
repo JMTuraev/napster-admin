@@ -6,102 +6,102 @@ import TabsList from './TabsList.jsx'
 export default function Games() {
   const [games, setGames] = useState([])
   const [tabs, setTabs] = useState([])
-  const [activeTabId, setActiveTabId] = useState(1)
+  const [activeTabId, setActiveTabId] = useState(1) // default tab id
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, game: null })
 
-  const fetchTabs = () => window.api.socket.emit('get-tabs')
-  const fetchGames = () => window.api.socket.emit('get-games', activeTabId)
+  // Serverdan o‘yinlarni olish (tabId bo‘yicha filtr bilan)
+  const fetchGames = (tabId = 1) => {
+    window.api.socket.emit('get-games', tabId)
+  }
+
+  // Serverdan tabs olish
+  const fetchTabs = () => {
+    window.api.socket.emit('get-tabs')
+  }
 
   useEffect(() => {
     fetchTabs()
-    fetchGames()
+    fetchGames(activeTabId)
 
-    window.api.socket.on('tabs', (data) => {
-      setTabs(data)
+    // O‘yinlar yangilansa state yangilanadi
+    window.api.socket.on('games', (games) => {
+      setGames(games)
     })
 
-    window.api.socket.on('games', (data) => {
-      setGames(data)
-    })
-
-    // If tabs change, check activeTabId still valid
-    window.api.socket.on('tabs-updated', (data) => {
-      setTabs(data)
-      if (!data.find(tab => tab.id === activeTabId)) {
+    // Tabs yangilansa state yangilanadi
+    window.api.socket.on('tabs', (tabs) => {
+      setTabs(tabs)
+      // Agar hozirgi activeTabId tabs ichida bo‘lmasa, defaultga qayt
+      if (!tabs.some(tab => tab.id === activeTabId)) {
         setActiveTabId(1)
+        fetchGames(1)
       }
-      fetchGames()
     })
 
-    window.api.socket.on('new-game', fetchGames)
-    window.api.socket.on('game-deleted', fetchGames)
+    // Yangi o‘yin qo‘shilganda yoki o‘chirilganda o‘yinlarni qayta yuklash
+    window.api.socket.on('new-game', () => fetchGames(activeTabId))
+    window.api.socket.on('game-deleted', () => fetchGames(activeTabId))
 
     return () => {
-      window.api.socket.off('tabs')
       window.api.socket.off('games')
-      window.api.socket.off('tabs-updated')
+      window.api.socket.off('tabs')
       window.api.socket.off('new-game')
       window.api.socket.off('game-deleted')
     }
   }, [activeTabId])
 
+  // Tabni o‘zgartirish
+  const handleTabChange = (tabId) => {
+    setActiveTabId(tabId)
+    fetchGames(tabId)
+  }
+
+  // Double click — run game
   const handleRunGame = (game) => {
     if (!game.path) return alert('❗️ Fayl yo‘li topilmadi')
-    window.electron.ipcRenderer.invoke('run-game', game.path)
+    window.electron.ipcRenderer
+      .invoke('run-game', game.path)
       .then(() => console.log('🎮 O‘yin ishga tushdi:', game.path))
       .catch((err) => alert('❌ Xatolik: ' + err.message))
   }
 
+  // Context menyu uchun
   const handleRightClick = (e, game) => {
     e.preventDefault()
     setContextMenu({ show: true, x: e.clientX, y: e.clientY, game })
-    document.addEventListener('click', () => setContextMenu({ show: false, x: 0, y: 0, game: null }), { once: true })
+    document.addEventListener('click', hideContextMenu, { once: true })
   }
+  const hideContextMenu = () => setContextMenu({ show: false, x: 0, y: 0, game: null })
 
+  // O‘chirish
   const handleDeleteGame = (game) => {
-    setContextMenu({ show: false, x: 0, y: 0, game: null })
+    hideContextMenu()
     const confirmed = window.confirm(`"${game.exe}" o‘yinini o‘chirmoqchimisiz?`)
     if (confirmed) window.api.socket.emit('delete-game', game.id)
   }
 
+  // Tahrirlash (demo uchun)
   const handleEditGame = (game) => {
-    setContextMenu({ show: false, x: 0, y: 0, game: null })
+    hideContextMenu()
     alert(`Tahrirlash oynasi ochiladi (demo): ${game.exe}`)
   }
 
-  // Tabs bilan ishlash uchun funksiyalar
-  const handleTabChange = (id) => {
-    setActiveTabId(id)
-  }
-
-  const handleAddTab = () => {
-    window.api.socket.emit('add-tab')
-  }
-
-  const handleEditTab = (id, name) => {
-    window.api.socket.emit('edit-tab', { id, name })
-  }
-
-  const handleDeleteTab = (id) => {
-    window.api.socket.emit('delete-tab', id)
-  }
-
-  // Faqat hozirgi tabdagi o‘yinlar
-  const filteredGames = games.filter(game => game.tabId === activeTabId)
-
+  // O‘yinlar allaqachon tabId bo‘yicha filtrlangan holda kelmoqda, shuning uchun qo‘shimcha filtr shart emas
   return (
     <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
+      {/* Tabs ro‘yxati */}
       <TabsList
         tabs={tabs}
         activeTabId={activeTabId}
         onTabChange={handleTabChange}
-        onAddTab={handleAddTab}
-        onEditTab={handleEditTab}
-        onDeleteTab={handleDeleteTab}
+       
       />
+      
 
-      <AddGames onGameAdded={() => window.api.socket.emit('get-games', activeTabId)} />
+      {/* O‘yin qo‘shish formasi */}
+      <AddGames onGameAdded={() => fetchGames(activeTabId)} />
 
+      {/* O‘yinlar ro‘yxati */}
       <div
         style={{
           marginTop: 40,
@@ -111,12 +111,19 @@ export default function Games() {
         }}
       >
         <GamesList
-          games={filteredGames}
+          games={games}
+          onFetchGames={() => fetchGames(activeTabId)} 
           contextMenu={contextMenu}
           onRunGame={handleRunGame}
           onRightClick={handleRightClick}
           onEditGame={handleEditGame}
           onDeleteGame={handleDeleteGame}
+          tabs={tabs}
+          activeTabId={activeTabId}
+          onChangeGameTab={(gameId, newTabId) => {
+            // Serverga tab o‘zgarishini yuborish
+            window.api.socket.emit('change-game-tab', { gameId, newTabId })
+          }}
         />
       </div>
     </div>

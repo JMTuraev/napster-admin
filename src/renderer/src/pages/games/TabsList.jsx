@@ -4,6 +4,12 @@ export default function TabsList({ tabs, activeTabId, onTabChange, onAddTab, onE
   const [editingTabId, setEditingTabId] = useState(null)
   const [editValue, setEditValue] = useState('')
 
+  // tabs massivini boolean empty bilan normalize qilamiz
+  const normalizedTabs = tabs.map(tab => ({
+    ...tab,
+    empty: Boolean(tab.empty)
+  }))
+
   const handleDoubleClick = (tab) => {
     setEditingTabId(tab.id)
     setEditValue(tab.name)
@@ -18,7 +24,7 @@ export default function TabsList({ tabs, activeTabId, onTabChange, onAddTab, onE
 
   return (
     <div style={{ display: 'flex', gap: 8, marginBottom: 16, alignItems: 'center' }}>
-      {tabs.map(tab => (
+      {normalizedTabs.map(tab => (
         <div key={tab.id} style={{ position: 'relative' }}>
           {editingTabId === tab.id ? (
             <input
@@ -75,7 +81,7 @@ export default function TabsList({ tabs, activeTabId, onTabChange, onAddTab, onE
         </div>
       ))}
 
-      {tabs.length < 5 && (
+      {normalizedTabs.length < 5 && (
         <button
           onClick={onAddTab}
           style={{

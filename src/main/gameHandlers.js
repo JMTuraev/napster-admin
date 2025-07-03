@@ -38,14 +38,29 @@ export function handleGameEvents(socket, io) {
     }
   })
 
-  // ✅ O‘yinlar ro‘yxatini yuborish
-  socket.on('get-games', () => {
+  // ✅ O‘yinlar ro‘yxatini yuborish, tabId bo‘yicha filtr bilan
+  socket.on('get-games', (tabId) => {
     try {
-      socket.emit('games', getAllGames())
-      console.log('📤 O‘yinlar yuborildi')
+      const validTabId = Number(tabId)
+      const games = isNaN(validTabId)
+        ? getAllGames()
+        : getAllGames(validTabId)
+      socket.emit('games', games)
+      console.log(`📤 O‘yinlar yuborildi, tabId: ${validTabId}`)
     } catch (err) {
       console.error('❌ O‘yinlarni yuborishda xatolik:', err.message)
       socket.emit('games', [])
+    }
+  })
+
+  // ✅ O‘yinning tabId sini o‘zgartirish
+  socket.on('change-game-tab', ({ gameId, newTabId }) => {
+    try {
+      db.prepare('UPDATE games SET tabId = ? WHERE id = ?').run(newTabId, gameId)
+      const updatedGames = getAllGames()
+      io.emit('games', updatedGames)
+    } catch (e) {
+      socket.emit('error', { message: e.message })
     }
   })
 
