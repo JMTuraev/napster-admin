@@ -4,25 +4,28 @@ export default function AddGames({ onGameAdded }) {
   const [path, setPath] = useState('')
   const [loading, setLoading] = useState(false)
   const [fallbackTimer, setFallbackTimer] = useState(null)
+  const [status, setStatus] = useState('')
 
   useEffect(() => {
     const handleResult = (res) => {
-      clearTimeout(fallbackTimer) // ⛔ Fallbackni to‘xtatamiz
+      clearTimeout(fallbackTimer)
       setLoading(false)
 
       if (res.status === 'exists') {
-        alert('⚠️ Bu path allaqachon mavjud:\n' + res.path)
+        console.warn('⚠️ Bu path allaqachon mavjud:', res.path)
+        setStatus('Bu path allaqachon mavjud!')
       } else if (res.status === 'error') {
-        alert('❌ Xatolik:\n' + res.message)
+        console.error('❌ Xatolik:', res.message)
+        setStatus('Xatolik: ' + res.message)
       } else if (res.status === 'added') {
-        alert('✅ O‘yin muvaffaqiyatli qo‘shildi:\n' + res.game.name)
+        console.log('✅ O‘yin muvaffaqiyatli qo‘shildi:', res.game.name)
+        setStatus('O‘yin muvaffaqiyatli qo‘shildi!')
         setPath('')
         onGameAdded?.()
       }
     }
 
     window.api.socket.on('game-add-result', handleResult)
-
     return () => {
       window.api.socket.off('game-add-result', handleResult)
     }
@@ -30,41 +33,63 @@ export default function AddGames({ onGameAdded }) {
 
   const handleAddGame = () => {
     const trimmedPath = path.trim()
-    if (!trimmedPath) return alert('❗️ Path kiritilmadi')
+    if (!trimmedPath) {
+      console.warn('❗️ Path kiritilmadi')
+      setStatus('Path kiritilmadi!')
+      return
+    }
 
     setLoading(true)
+    setStatus('')
     window.api.socket.emit('add-game', { path: trimmedPath })
 
-    // ⏳ 5 sekund kutamiz, agar server javob bermasa loadingni to‘xtatamiz
     const timer = setTimeout(() => {
       setLoading(false)
+      setStatus('Serverdan javob kelmadi.')
     }, 5000)
     setFallbackTimer(timer)
   }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold">🎮 O‘yinlar boshqaruvi</h1>
+    <div style={{ padding: 16 }}>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 18 }}>🎮 O‘yinlar boshqaruvi</h1>
 
-      <div className="flex gap-2 my-4">
+      <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
         <input
           value={path}
           onChange={(e) => setPath(e.target.value)}
-          className="px-2 py-1 border rounded w-1/2"
+          style={{
+            padding: '7px 10px', border: '1px solid #ccc', borderRadius: 7, width: 320, fontSize: 16
+          }}
           placeholder="C:\\Games\\GTA\\gta_sa.exe"
         />
         <button
           onClick={handleAddGame}
           disabled={loading}
-          className="px-4 py-1 bg-white text-black rounded"
+          style={{
+            padding: '7px 16px',
+            background: loading ? '#d9e0ef' : '#fff',
+            color: '#23243e',
+            border: 'none',
+            borderRadius: 7,
+            fontWeight: 600,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            fontSize: 16
+          }}
         >
           {loading ? '⏳ Qo‘shilmoqda...' : 'O‘yin qo‘shish'}
         </button>
       </div>
 
       {loading && (
-        <div className="text-lg text-gray-400">
-          ⏳ <span className="animate-pulse">Tekshirilmoqda...</span>
+        <div style={{ fontSize: 17, color: '#8892bf', marginBottom: 7 }}>
+          ⏳ <span style={{ opacity: 0.8 }}>Tekshirilmoqda...</span>
+        </div>
+      )}
+
+      {!!status && (
+        <div style={{ fontSize: 16, color: status.includes('muvaffaqiyatli') ? '#28c76f' : '#f66', marginTop: 8 }}>
+          {status}
         </div>
       )}
     </div>
