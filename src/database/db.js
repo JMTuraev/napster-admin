@@ -86,7 +86,7 @@ export function getOrSaveGameIcon(exePath, gameName = '') {
   try {
     if (!existsSync(exePath)) throw new Error('Exe mavjud emas')
 
-    const iconBuffer = extractIcon(exePath, 256)
+    const iconBuffer = extractIcon(exePath, 32)
     if (!iconBuffer) throw new Error('Icon olinmadi')
 
     const iconFileName = `${gameName || basename(exePath, extname(exePath))}_${Date.now()}.ico`
