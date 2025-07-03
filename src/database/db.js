@@ -1,15 +1,22 @@
 import Database from 'better-sqlite3'
-import { join } from 'path'
-import { existsSync, mkdirSync } from 'fs'
+import { join, basename, extname } from 'path'
+import { existsSync, mkdirSync, writeFileSync } from 'fs'
+import extractIcon from 'extract-file-icon'
 
-// 📁 Bazani joylashuvi
+// 📁 DB joylashuvi
 const dbDir = join(process.cwd(), 'data')
-if (!existsSync(dbDir)) mkdirSync(dbDir)
+if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true })
 
 const dbPath = join(dbDir, 'napster.db')
 const db = new Database(dbPath)
 
-// ✅ levels jadvali (STATUSLAR)
+// 📁 ICONS papkasi (frontend uchun mos)
+const iconsDir = join(process.cwd(), 'src', 'renderer', 'public', 'icons')
+if (!existsSync(iconsDir)) mkdirSync(iconsDir, { recursive: true })
+
+const DEFAULT_ICON_PATH = '/icons/default-icon.png'
+
+// ✅ levels jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS levels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -18,16 +25,12 @@ db.prepare(`
   )
 `).run()
 
+// Standart levels
 const defaultLevels = ['Standard', 'Silver', 'Gold', 'Platinum', 'Diamond']
-const insert = db.prepare(`INSERT OR IGNORE INTO levels (name, is_active) VALUES (?, 1)`)
+const insertLevel = db.prepare(`INSERT OR IGNORE INTO levels (name, is_active) VALUES (?, 1)`)
+defaultLevels.forEach(level => insertLevel.run(level))
 
-for (const level of defaultLevels) {
-  insert.run(level)
-}
-
-console.log('✅ levels jadvali va default darajalar tayyor')
-
-// ✅ Jadval yaratishlar
+// ✅ users jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     mac TEXT PRIMARY KEY,
@@ -39,6 +42,7 @@ db.prepare(`
   )
 `).run()
 
+// ✅ sessions jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -50,6 +54,7 @@ db.prepare(`
   )
 `).run()
 
+// ✅ logs jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -60,57 +65,58 @@ db.prepare(`
   )
 `).run()
 
+// ✅ games jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT,
     exe TEXT,
-    path TEXT UNIQUE
+    path TEXT UNIQUE,
+    icon TEXT
   )
 `).run()
 
-// 🎮 O‘yinlar funksiyasi
-export function addGame({ name, exe, path }) {
-  db.prepare(`
-    INSERT OR IGNORE INTO games (name, exe, path)
-    VALUES (?, ?, ?)
-  `).run(name, exe, path)
+// 🔄 icon migratsiyasi
+try {
+  db.prepare(`ALTER TABLE games ADD COLUMN icon TEXT`).run()
+} catch (e) {}
+
+// Iconni olish yoki defaultni qaytarish
+export function getOrSaveGameIcon(exePath, gameName = '') {
+  try {
+    if (!existsSync(exePath)) throw new Error('Exe mavjud emas')
+
+    const iconBuffer = extractIcon(exePath, 256)
+    if (!iconBuffer) throw new Error('Icon olinmadi')
+
+    const iconFileName = `${gameName || basename(exePath, extname(exePath))}_${Date.now()}.ico`
+    const iconFullPath = join(iconsDir, iconFileName)
+    writeFileSync(iconFullPath, iconBuffer)
+
+    return `/icons/${iconFileName}`
+  } catch (e) {
+    return DEFAULT_ICON_PATH
+  }
 }
 
+// 🎮 O‘yin qo‘shish funksiyasi (icon bilan)
+export function addGame({ name, exe, path, icon }) {
+  db.prepare(`
+    INSERT OR IGNORE INTO games (name, exe, path, icon)
+    VALUES (?, ?, ?, ?)
+  `).run(name, exe, path, icon || DEFAULT_ICON_PATH)
+}
+
+// 🎮 O‘yin avtomatik icon bilan qo‘shiladi
+export function addGameAutoIcon({ name, exe, path }) {
+  const icon = getOrSaveGameIcon(path, name)
+  addGame({ name, exe, path, icon })
+}
+
+// 🎮 Barcha o‘yinlar
 export function getAllGames() {
   return db.prepare(`SELECT * FROM games`).all()
 }
 
-// 👤 Userlar funksiyasi (bazaviy)
-export function addOrUpdateUser(mac) {
-  const now = new Date().toISOString()
-
-  const existingUser = db.prepare(`SELECT * FROM users WHERE mac = ?`).get(mac)
-
-  if (!existingUser) {
-    db.prepare(`
-      INSERT INTO users (mac, number, status, created_at, level_id)
-      VALUES (?, NULL, 'online', ?, NULL)
-    `).run(mac, now)
-
-    return { status: 'added', mac }
-  } else {
-    db.prepare(`
-      UPDATE users SET status = 'online' WHERE mac = ?
-    `).run(mac)
-
-    return { status: 'updated', mac }
-  }
-}
-
-export function getAllUsers() {
-  return db.prepare(`
-    SELECT users.*, levels.name AS level_name
-    FROM users
-    LEFT JOIN levels ON users.level_id = levels.id
-    ORDER BY number ASC
-  `).all()
-}
-
-// 📤 Export baza obyekti
+// 📤 DB obyektini eksport qilish
 export { db }
