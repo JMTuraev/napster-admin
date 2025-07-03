@@ -16,6 +16,8 @@ if (!existsSync(iconsDir)) mkdirSync(iconsDir, { recursive: true })
 
 const DEFAULT_ICON_PATH = '/icons/default-icon.png'
 
+// ======== JADVALLAR ========
+
 // ✅ levels jadvali
 db.prepare(`
   CREATE TABLE IF NOT EXISTS levels (
@@ -29,6 +31,31 @@ db.prepare(`
 const defaultLevels = ['Standard', 'Silver', 'Gold', 'Platinum', 'Diamond']
 const insertLevel = db.prepare(`INSERT OR IGNORE INTO levels (name, is_active) VALUES (?, 1)`)
 defaultLevels.forEach(level => insertLevel.run(level))
+
+// ✅ tabs jadvali (categories o‘rniga)
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS tabs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    sort_order INTEGER DEFAULT 0,
+    empty BOOLEAN DEFAULT 1
+  )
+`).run()
+
+// DEFAULT 5 ta tab yaratish (agar bo‘lmasa)
+const defaultTabs = [
+  { id: 1, name: 'Action', sort_order: 1, empty: 1 },
+  { id: 2, name: 'Arcade', sort_order: 2, empty: 1 },
+  { id: 3, name: 'RPG', sort_order: 3, empty: 1 },
+  { id: 4, name: 'Strategy', sort_order: 4, empty: 1 },
+  { id: 5, name: 'Puzzle', sort_order: 5, empty: 1 }
+]
+for (const tab of defaultTabs) {
+  db.prepare(`
+    INSERT OR IGNORE INTO tabs (id, name, sort_order, empty)
+    VALUES (?, ?, ?, ?)
+  `).run(tab.id, tab.name, tab.sort_order, tab.empty)
+}
 
 // ✅ users jadvali
 db.prepare(`
@@ -72,16 +99,13 @@ db.prepare(`
     name TEXT,
     exe TEXT,
     path TEXT UNIQUE,
-    icon TEXT
+    icon TEXT,
+    tabId INTEGER NOT NULL DEFAULT 1,
+    FOREIGN KEY (tabId) REFERENCES tabs(id)
   )
 `).run()
 
-// 🔄 icon migratsiyasi
-try {
-  db.prepare(`ALTER TABLE games ADD COLUMN icon TEXT`).run()
-} catch (e) {}
-
-// Iconni olish yoki defaultni qaytarish
+// Iconni olish yoki defaultni qaytarish funksiyasi
 export function getOrSaveGameIcon(exePath, gameName = '') {
   try {
     if (!existsSync(exePath)) throw new Error('Exe mavjud emas')
@@ -99,23 +123,31 @@ export function getOrSaveGameIcon(exePath, gameName = '') {
   }
 }
 
-// 🎮 O‘yin qo‘shish funksiyasi (icon bilan)
-export function addGame({ name, exe, path, icon }) {
+// 🎮 O‘yin qo‘shish funksiyasi (icon va tabId bilan)
+export function addGame({ name, exe, path, icon, tabId = 1 }) {
   db.prepare(`
-    INSERT OR IGNORE INTO games (name, exe, path, icon)
-    VALUES (?, ?, ?, ?)
-  `).run(name, exe, path, icon || DEFAULT_ICON_PATH)
+    INSERT OR IGNORE INTO games (name, exe, path, icon, tabId)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(name, exe, path, icon || DEFAULT_ICON_PATH, tabId)
 }
 
 // 🎮 O‘yin avtomatik icon bilan qo‘shiladi
-export function addGameAutoIcon({ name, exe, path }) {
+export function addGameAutoIcon({ name, exe, path, tabId = 1 }) {
   const icon = getOrSaveGameIcon(path, name)
-  addGame({ name, exe, path, icon })
+  addGame({ name, exe, path, icon, tabId })
 }
 
-// 🎮 Barcha o‘yinlar
-export function getAllGames() {
-  return db.prepare(`SELECT * FROM games`).all()
+// 🎮 Barcha o‘yinlar, tabId bo‘yicha filtr bilan
+export function getAllGames(tabId) {
+  if (typeof tabId === 'number') {
+    return db.prepare('SELECT * FROM games WHERE tabId = ? ORDER BY id ASC').all(tabId)
+  }
+  return db.prepare('SELECT * FROM games ORDER BY id ASC').all()
+}
+
+// 🎮 Barcha tabs
+export function getAllTabs() {
+  return db.prepare('SELECT * FROM tabs ORDER BY sort_order ASC, id ASC').all()
 }
 
 // 📤 DB obyektini eksport qilish

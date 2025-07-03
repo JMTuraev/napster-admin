@@ -16,6 +16,8 @@ import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js' // ✅ TIMER IPC handlerlari
 import { initTimerTable } from '../database/timer.js'    // ✅ TIMER jadval yaratish
 
+import { handleTabsEvents } from './tabsHandlers.js'  // 🆕 Tabs handler import
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     kiosk: false,
@@ -105,6 +107,8 @@ app.whenReady().then(() => {
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
     handleGameEvents(socket, io)
+    handleTabsEvents(socket, io)   // 🆕 Tabs eventlarini ulash
+    // boshqa event handlerlar shu yerda qo'shilishi mumkin
   })
 
   // 📊 Jadval yaratishlar (bir martalik)
