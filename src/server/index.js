@@ -4,6 +4,9 @@ const express = require('express')
 const path = require('path')
 const fs = require('fs')
 
+// 1. BU YERGA STATIC IP-MANZILNI QO‘LINGIZ BILAN YOZING:
+const ADMIN_STATIC_IP = '172.20.10.2' // <--- O'ZINGIZNING ADMIN KOMPYUTER STATIC IP MANZILI
+
 const app = express()
 const PORT = 3333 // admin-server porti
 
@@ -30,6 +33,9 @@ app.get('/icons/list', (req, res) => {
   })
 })
 
+// Faqat static IP ni log qilamiz (tarmoqdan ulanish uchun)
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Napster Admin API: http://YOUR_ADMIN_IP:${PORT}`)
+  console.log(`Napster Admin API:   http://${ADMIN_STATIC_IP}:${PORT}`)
+  console.log(`Icons static:        http://${ADMIN_STATIC_IP}:${PORT}/icons`)
+  console.log(`Icons list:          http://${ADMIN_STATIC_IP}:${PORT}/icons/list`)
 })
