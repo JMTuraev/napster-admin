@@ -7,13 +7,11 @@ export default function Games() {
   const [games, setGames] = useState([])
   const [tabs, setTabs] = useState([])
   const [activeTabId, setActiveTabId] = useState(1)
-  const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, game: null })
 
   // O‘yinlar va tabs-ni serverdan olish
   const fetchGames = (tabId = 1) => {
     window.api.socket.emit('get-games', tabId)
   }
-
   const fetchTabs = () => {
     window.api.socket.emit('get-tabs')
   }
@@ -22,23 +20,27 @@ export default function Games() {
     fetchTabs()
     fetchGames(activeTabId)
 
-    window.api.socket.on('games', (games) => setGames(games))
-    window.api.socket.on('tabs', (tabs) => {
+    // socket event handlerlar
+    const handleGames = (games) => setGames(games)
+    const handleTabs = (tabs) => {
       setTabs(tabs)
       if (!tabs.some(tab => tab.id === activeTabId)) {
         setActiveTabId(1)
         fetchGames(1)
       }
-    })
+    }
+    window.api.socket.on('games', handleGames)
+    window.api.socket.on('tabs', handleTabs)
     window.api.socket.on('new-game', () => fetchGames(activeTabId))
     window.api.socket.on('game-deleted', () => fetchGames(activeTabId))
 
     return () => {
-      window.api.socket.off('games')
-      window.api.socket.off('tabs')
+      window.api.socket.off('games', handleGames)
+      window.api.socket.off('tabs', handleTabs)
       window.api.socket.off('new-game')
       window.api.socket.off('game-deleted')
     }
+    // eslint-disable-next-line
   }, [activeTabId])
 
   // Tabni o‘zgartirish
@@ -49,10 +51,7 @@ export default function Games() {
 
   // Tab nomini tahrirlash
   const handleEditTab = (tabId, newName) => {
-    console.log(tabId, newName)
-    // Serverga tahrirlangan nomni yuborish
-    window.api.socket.emit('edit-tab', {id:tabId, name:newName })
-    // Yangi tabs olish
+    window.api.socket.emit('edit-tab', { id: tabId, name: newName })
     fetchTabs()
   }
 
@@ -65,25 +64,30 @@ export default function Games() {
       .catch((err) => alert('❌ Xatolik: ' + err.message))
   }
 
-  // Context menyu
-  const handleRightClick = (e, game) => {
-    e.preventDefault()
-    setContextMenu({ show: true, x: e.clientX, y: e.clientY, game })
-    document.addEventListener('click', hideContextMenu, { once: true })
-  }
-  const hideContextMenu = () => setContextMenu({ show: false, x: 0, y: 0, game: null })
-
   // O‘chirish
   const handleDeleteGame = (game) => {
-    hideContextMenu()
     const confirmed = window.confirm(`"${game.exe}" o‘yinini o‘chirmoqchimisiz?`)
     if (confirmed) window.api.socket.emit('delete-game', game.id)
   }
 
   // Tahrirlash (demo uchun)
   const handleEditGame = (game) => {
-    hideContextMenu()
     alert(`Tahrirlash oynasi ochiladi (demo): ${game.exe}`)
+  }
+
+  // DRAG&DROP: yangi tartibni UI va serverga jo‘natish
+  const handleOrderChange = (newGames) => {
+    setGames(newGames) // UI-da darhol o‘zgaradi
+    const order = newGames.map((g, idx) => ({ id: g.id, order: idx }))
+    window.api.socket.emit('update-game-order', {
+      tabId: activeTabId,
+      order
+    })
+  }
+
+  // Game tab o‘zgarganda
+  const handleChangeGameTab = (gameId, newTabId) => {
+    window.api.socket.emit('change-game-tab', { gameId, newTabId })
   }
 
   return (
@@ -103,17 +107,14 @@ export default function Games() {
       <div style={{ marginTop: 40, display: 'flex', flexWrap: 'wrap', gap: 34 }}>
         <GamesList
           games={games}
-          onFetchGames={() => fetchGames(activeTabId)}
-          contextMenu={contextMenu}
-          onRunGame={handleRunGame}
-          onRightClick={handleRightClick}
-          onEditGame={handleEditGame}
-          onDeleteGame={handleDeleteGame}
           tabs={tabs}
           activeTabId={activeTabId}
-          onChangeGameTab={(gameId, newTabId) => {
-            window.api.socket.emit('change-game-tab', { gameId, newTabId })
-          }}
+          onRunGame={handleRunGame}
+          onEditGame={handleEditGame}
+          onDeleteGame={handleDeleteGame}
+          onChangeGameTab={handleChangeGameTab}
+          onOrderChange={handleOrderChange}
+          onFetchGames={() => fetchGames(activeTabId)}
         />
       </div>
     </div>

@@ -92,7 +92,7 @@ db.prepare(`
   )
 `).run()
 
-// ✅ games jadvali
+/// ✅ games jadvali (order bilan)
 db.prepare(`
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -101,10 +101,10 @@ db.prepare(`
     path TEXT UNIQUE,
     icon TEXT,
     tabId INTEGER NOT NULL DEFAULT 1,
+    "order" INTEGER DEFAULT 0,
     FOREIGN KEY (tabId) REFERENCES tabs(id)
   )
 `).run()
-
 // Iconni olish yoki defaultni qaytarish funksiyasi
 export function getOrSaveGameIcon(exePath, gameName = '') {
   try {

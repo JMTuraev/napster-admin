@@ -1,22 +1,72 @@
 import React, { useState, useEffect, useRef } from 'react'
+import {
+  DndContext,
+  closestCenter,
+  PointerSensor,
+  useSensor,
+  useSensors
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import GameCard from './GameCard'
 
 const defaultIcon = '/icons/default-icon.png'
+
+function SortableGame({ game, ...props }) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: game.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1
+  }
+
+  return (
+    <GameCard
+      game={game}
+      setNodeRef={setNodeRef}
+      listeners={listeners}
+      attributes={attributes}
+      style={style}
+      isDragging={isDragging}
+      defaultIcon={defaultIcon}
+      {...props}
+    />
+  )
+}
 
 export default function GamesList({
   games = [],
   tabs = [],
   activeTabId,
   onRunGame,
-  onRightClick,
   onEditGame,
   onDeleteGame,
-  onChangeGameTab, // yangi: o‘yinning tabId ni o‘zgartirish uchun
-  onFetchGames
+  onChangeGameTab,
+  onFetchGames,
+  onOrderChange
 }) {
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, game: null })
   const menuRef = useRef(null)
 
-  // Kontekst menyuni yopish: tashqariga bosganda
+  // Drag & Drop uchun sensorlar
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
+  )
+
+  // Context menyuni boshqarish
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -29,8 +79,14 @@ export default function GamesList({
     return () => document.removeEventListener('click', handleClickOutside)
   }, [contextMenu.show])
 
-  const onIconError = (e) => {
-    e.target.src = defaultIcon
+  // Drag tugagach, yangi tartibni qaytarish
+  const handleDragEnd = (event) => {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+    const oldIndex = games.findIndex(g => g.id === active.id)
+    const newIndex = games.findIndex(g => g.id === over.id)
+    const newGames = arrayMove(games, oldIndex, newIndex)
+    if (onOrderChange) onOrderChange(newGames)
   }
 
   const handleRightClick = (e, game) => {
@@ -81,60 +137,30 @@ export default function GamesList({
     )
   }
 
+  const gameIds = games.map(g => g.id)
+
   return (
     <>
-      {games.map((game) => (
-        <div
-          key={game.id}
-          style={{
-            width: 110,
-            height: 120,
-            background: 'linear-gradient(120deg, #222345 60%, #2e325c 100%)',
-            borderRadius: 22,
-            boxShadow: '0 1px 12px #1a1a1a40',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            userSelect: 'none',
-            position: 'relative',
-            transition: 'box-shadow .14s, transform .14s',
-            marginBottom: 8,
-            border: '2px solid transparent'
-          }}
-          title="2x bos: Ishga tushur • O‘ng tugma: Amal"
-          onDoubleClick={() => onRunGame(game)}
-          onContextMenu={e => handleRightClick(e, game)}
-          onMouseOver={e => e.currentTarget.style.boxShadow = '0 6px 22px #191e3a80'}
-          onMouseOut={e => e.currentTarget.style.boxShadow = '0 1px 12px #1a1a1a40'}
-        >
-          <img
-            src={game.icon || defaultIcon}
-            alt="icon"
-            width={48}
-            height={48}
-            onError={onIconError}
-            style={{
-              borderRadius: 12,
-              background: '#181b1f',
-              boxShadow: '0 2px 8px #191e3a40',
-              marginBottom: 14
-            }}
-          />
-          <span style={{
-            fontSize: 14,
-            fontWeight: 200,
-            color: '#ff8383',
-            letterSpacing: 1,
-            textAlign: 'center',
-            marginTop: 0,
-            wordBreak: 'break-word'
-          }}>
-            {game.exe}
-          </span>
-        </div>
-      ))}
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={gameIds} strategy={verticalListSortingStrategy}>
+          <div style={{ display: 'flex', gap: 24, flexWrap: 'wrap', minHeight: 100 }}>
+            {games.map((game) => (
+              <SortableGame
+                key={game.id}
+                game={game}
+                onDoubleClick={() => onRunGame(game)}
+                onContextMenu={e => handleRightClick(e, game)}
+                onMouseOver={e => e.currentTarget.style.boxShadow = '0 6px 22px #191e3a80'}
+                onMouseOut={e => e.currentTarget.style.boxShadow = '0 1px 12px #1a1a1a40'}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </DndContext>
 
       {/* KONTEKST MENYU */}
       {contextMenu.show && (

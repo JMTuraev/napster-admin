@@ -38,7 +38,7 @@ export function handleGameEvents(socket, io) {
     }
   })
 
-  // ✅ O‘yinlar ro‘yxatini yuborish, tabId bo‘yicha filtr bilan
+  // ✅ O‘yinlar ro‘yxatini yuborish, tabId bo‘yicha filtr bilan (order bo‘yicha)
   socket.on('get-games', (tabId) => {
     try {
       const validTabId = Number(tabId)
@@ -56,13 +56,38 @@ export function handleGameEvents(socket, io) {
   // ✅ O‘yinning tabId sini o‘zgartirish
   socket.on('change-game-tab', ({ gameId, newTabId }) => {
     try {
-      db.prepare('UPDATE games SET tabId = ? WHERE id = ?').run(newTabId, gameId)
+      // O‘yin boshqa tabga o‘tganda, order ni oxiriga qo‘yish:
+      const maxOrderRow = db.prepare('SELECT MAX("order") as maxOrder FROM games WHERE tabId = ?').get(newTabId)
+      const newOrder = (maxOrderRow?.maxOrder ?? -1) + 1
+
+      db.prepare('UPDATE games SET tabId = ?, "order" = ? WHERE id = ?').run(newTabId, newOrder, gameId)
       const updatedGames = getAllGames()
       io.emit('games', updatedGames)
     } catch (e) {
       socket.emit('error', { message: e.message })
     }
   })
+
+  // ✅ O‘yinlar tartibini (order) yangilash: DRAG-DROP!
+ socket.on('update-game-order', ({ tabId, order }) => {
+  try {
+    const updateStmt = db.prepare('UPDATE games SET "order" = ? WHERE id = ? AND tabId = ?')
+    db.transaction(() => {
+      order.forEach(({ id, order }) => {
+        updateStmt.run(order, id, tabId)
+      })
+    })()
+
+    // Yangilangan ro‘yxatni qaytarish
+    const games = db.prepare('SELECT * FROM games WHERE tabId = ? ORDER BY "order", id').all(tabId)
+    io.emit('games', games)
+    socket.emit('game-order-updated', { status: 'ok' })
+    console.log(`✅ O‘yinlar tartibi yangilandi: tabId ${tabId}`)
+  } catch (err) {
+    console.error('❌ O‘yinlar tartibini yangilashda xato:', err.message)
+    socket.emit('order-update-error', { status: 'error', message: err.message })
+  }
+})
 
   // ✅ O‘yinni o‘chirish (icon bilan)
   socket.on('delete-game', (id) => {
@@ -76,6 +101,13 @@ export function handleGameEvents(socket, io) {
       }
 
       db.prepare('DELETE FROM games WHERE id = ?').run(id)
+
+      // O‘chirilganda tartibni yangilash (shu tab uchun)
+      const tabId = game?.tabId ?? 1
+      const gamesInTab = db.prepare('SELECT id FROM games WHERE tabId = ? ORDER BY "order" ASC, id ASC').all(tabId)
+      // 0,1,2,3... qilib qayta o‘rnash
+      const updateOrder = db.prepare('UPDATE games SET "order" = ? WHERE id = ?')
+      gamesInTab.forEach((g, idx) => updateOrder.run(idx, g.id))
 
       const updatedGames = getAllGames()
       io.emit('games', updatedGames)
