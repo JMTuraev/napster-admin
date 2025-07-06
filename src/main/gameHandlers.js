@@ -7,7 +7,7 @@ const iconsDir = join(process.cwd(), 'src', 'renderer', 'public', 'icons')
 
 // 🟢 SOCKET handlerlari
 export function handleGameEvents(socket, io) {
-  // ✅ O‘yin qo‘shish (avtomatik icon bilan)
+  // O‘yin qo‘shish (icon bilan)
   socket.on('add-game', (data) => {
     try {
       const path = data?.path?.trim()
@@ -38,7 +38,7 @@ export function handleGameEvents(socket, io) {
     }
   })
 
-  // ✅ O‘yinlar ro‘yxatini yuborish, tabId bo‘yicha filtr bilan (order bo‘yicha)
+  // O‘yinlar ro‘yxatini to‘liq yuborish (barcha ustunlar bilan)
   socket.on('get-games', (tabId) => {
     try {
       const validTabId = Number(tabId)
@@ -46,17 +46,16 @@ export function handleGameEvents(socket, io) {
         ? getAllGames()
         : getAllGames(validTabId)
       socket.emit('games', games)
-      console.log(`📤 O‘yinlar yuborildi, tabId: ${validTabId}`)
+      console.log(`📤 O‘yinlar userga yuborildi, tabId: ${validTabId}`)
     } catch (err) {
-      console.error('❌ O‘yinlarni yuborishda xatolik:', err.message)
+      console.error('❌ O‘yinlarni yuborishda xato:', err.message)
       socket.emit('games', [])
     }
   })
 
-  // ✅ O‘yinning tabId sini o‘zgartirish
+  // O‘yinning tabId sini o‘zgartirish
   socket.on('change-game-tab', ({ gameId, newTabId }) => {
     try {
-      // O‘yin boshqa tabga o‘tganda, order ni oxiriga qo‘yish:
       const maxOrderRow = db.prepare('SELECT MAX("order") as maxOrder FROM games WHERE tabId = ?').get(newTabId)
       const newOrder = (maxOrderRow?.maxOrder ?? -1) + 1
 
@@ -68,33 +67,33 @@ export function handleGameEvents(socket, io) {
     }
   })
 
-  // ✅ O‘yinlar tartibini (order) yangilash: DRAG-DROP!
- socket.on('update-game-order', ({ tabId, order }) => {
-  try {
-    const updateStmt = db.prepare('UPDATE games SET "order" = ? WHERE id = ? AND tabId = ?')
-    db.transaction(() => {
-      order.forEach(({ id, order }) => {
-        updateStmt.run(order, id, tabId)
-      })
-    })()
+  // O‘yinlar tartibini yangilash (DRAG-DROP)
+  socket.on('update-game-order', ({ tabId, order }) => {
+    try {
+      const updateStmt = db.prepare('UPDATE games SET "order" = ? WHERE id = ? AND tabId = ?')
+      db.transaction(() => {
+        order.forEach(({ id, order }) => {
+          updateStmt.run(order, id, tabId)
+        })
+      })()
 
-    // Yangilangan ro‘yxatni qaytarish
-    const games = db.prepare('SELECT * FROM games WHERE tabId = ? ORDER BY "order", id').all(tabId)
-    io.emit('games', games)
-    socket.emit('game-order-updated', { status: 'ok' })
-    console.log(`✅ O‘yinlar tartibi yangilandi: tabId ${tabId}`)
-  } catch (err) {
-    console.error('❌ O‘yinlar tartibini yangilashda xato:', err.message)
-    socket.emit('order-update-error', { status: 'error', message: err.message })
-  }
-})
+      const games = db.prepare('SELECT * FROM games WHERE tabId = ? ORDER BY "order", id').all(tabId)
+      io.emit('games', games)
+      socket.emit('game-order-updated', { status: 'ok' })
+      console.log(`✅ O‘yinlar tartibi yangilandi: tabId ${tabId}`)
+    } catch (err) {
+      console.error('❌ O‘yinlar tartibini yangilashda xato:', err.message)
+      socket.emit('order-update-error', { status: 'error', message: err.message })
+    }
+  })
 
-  // ✅ O‘yinni o‘chirish (icon bilan)
+  // O‘yinni o‘chirish (icon faylini ham o‘chirish)
   socket.on('delete-game', (id) => {
     if (!id) return
     try {
       const game = db.prepare('SELECT * FROM games WHERE id = ?').get(id)
 
+      // icon faylni ham o‘chir
       if (game?.icon && game.icon.startsWith('/icons/')) {
         const iconPath = join(iconsDir, game.icon.replace('/icons/', ''))
         if (fs.existsSync(iconPath)) fs.unlinkSync(iconPath)
@@ -102,27 +101,25 @@ export function handleGameEvents(socket, io) {
 
       db.prepare('DELETE FROM games WHERE id = ?').run(id)
 
-      // O‘chirilganda tartibni yangilash (shu tab uchun)
+      // Shu tab uchun order ni qayta tartiblash
       const tabId = game?.tabId ?? 1
       const gamesInTab = db.prepare('SELECT id FROM games WHERE tabId = ? ORDER BY "order" ASC, id ASC').all(tabId)
-      // 0,1,2,3... qilib qayta o‘rnash
       const updateOrder = db.prepare('UPDATE games SET "order" = ? WHERE id = ?')
       gamesInTab.forEach((g, idx) => updateOrder.run(idx, g.id))
 
       const updatedGames = getAllGames()
       io.emit('games', updatedGames)
       socket.emit('game-deleted', { status: 'ok', id })
-
       console.log('🗑 O‘yin muvaffaqiyatli o‘chirildi:', id)
     } catch (err) {
-      console.error('❌ O‘yin o‘chirishda xatolik:', err.message)
+      console.error('❌ O‘yin o‘chirishda xato:', err.message)
       socket.emit('game-deleted', { status: 'error', message: err.message })
     }
   })
 }
 
-// 🟢 IPC handlerlari
-export async function runGameHandler(event, exePath) {
+// 🟢 IPC handlerlari (renderer dan chaqiriladi)
+export async function runGameHandler(_event, exePath) {
   return new Promise((resolve, reject) => {
     execFile(exePath, (error) => {
       if (error) {
@@ -136,7 +133,7 @@ export async function runGameHandler(event, exePath) {
   })
 }
 
-export async function checkPathExistsHandler(event, path) {
+export async function checkPathExistsHandler(_event, path) {
   const exists = fs.existsSync(path)
   console.log(`📦 Path tekshirildi: ${path} – ${exists ? 'mavjud' : 'yo‘q'}`)
   return exists
