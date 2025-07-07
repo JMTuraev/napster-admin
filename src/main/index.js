@@ -3,21 +3,17 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// --- Baza va handlerlar ---
 import { db } from '../database/db.js'
 import { startSocketServer } from './socketServer.js'
-import {
-  runGameHandler,
-  checkPathExistsHandler,
-  handleGameEvents
-} from './gameHandlers.js'
-
+import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
+import { handleTabsEvents } from './tabsHandlers.js'
 import './statusHandlers.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
-import { registerTimerHandlers } from './timerHandler.js' // ✅ TIMER IPC handlerlari
-import { initTimerTable } from '../database/timer.js'    // ✅ TIMER jadval yaratish
+import { registerTimerHandlers } from './timerHandler.js'
+import { initTimerTable } from '../database/timer.js'
 
-import { handleTabsEvents } from './tabsHandlers.js'  // 🆕 Tabs handler import
-
+// --- Electron window yaratish ---
 function createWindow() {
   const mainWindow = new BrowserWindow({
     kiosk: false,
@@ -35,7 +31,6 @@ function createWindow() {
     }
   })
 
-  // 🔓 ESC bosilganda kioskdan chiqish
   mainWindow.webContents.on('before-input-event', (event, input) => {
     if (input.key === 'Escape') {
       console.log('🔓 ESC bosildi – kiosk mode off')
@@ -43,13 +38,11 @@ function createWindow() {
     }
   })
 
-  // 🌐 Tashqi linklarni brauzerda ochish
   mainWindow.webContents.setWindowOpenHandler((details) => {
     shell.openExternal(details.url)
     return { action: 'deny' }
   })
 
-  // 🔄 Renderer yuklash (dev yoki prod)
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
     mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL'])
     mainWindow.webContents.openDevTools()
@@ -58,9 +51,7 @@ function createWindow() {
   }
 }
 
-//
-// 📡 IPC HANDLERLAR
-//
+// --- IPC HANDLERLAR (userlar uchun va o‘yinlar uchun) ---
 ipcMain.handle('add-user', (event, user) => {
   const now = new Date().toISOString()
   const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
@@ -71,13 +62,11 @@ ipcMain.handle('add-user', (event, user) => {
       INSERT INTO users (mac, number, status, created_at)
       VALUES (?, NULL, ?, ?)
     `).run(user.mac, defaultStatus, now)
-
     return { status: 'added', mac: user.mac }
   } else {
     db.prepare(`
       UPDATE users SET status = ? WHERE mac = ?
     `).run(defaultStatus, user.mac)
-
     return { status: 'updated', mac: user.mac }
   }
 })
@@ -86,42 +75,36 @@ ipcMain.handle('get-users', () => {
   return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
 })
 
-// 🎮 O‘yinlar bilan ishlovchi IPC handlerlar
 ipcMain.handle('run-game', runGameHandler)
 ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
-//
-// 🚀 Dastur ishga tushganda
-//
+// --- APP STARTUP ---
 app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
-
-  app.on('browser-window-created', (_, window) => {
-    optimizer.watchWindowShortcuts(window)
-  })
+  app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   ipcMain.on('ping', () => console.log('pong'))
 
-  // 🧠 SOCKET SERVER
+  // SOCKET SERVER: barcha socket eventlarni ulang!
   const io = startSocketServer()
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
     handleGameEvents(socket, io)
-    handleTabsEvents(socket, io)   // 🆕 Tabs eventlarini ulash
-    // boshqa event handlerlar shu yerda qo'shilishi mumkin
+    handleTabsEvents(socket, io)
+    // Qo‘shimcha socket handlerlarni shu yerga qo‘shing
   })
 
-  // 📊 Jadval yaratishlar (bir martalik)
+  // TIMER jadvali/migratsiyasi
   initTimerTable()
 
-  // 📡 IPC Handlerlarni ro‘yxatdan o‘tkazish
+  // Barcha IPC handlerlarni ro‘yxatdan o‘tkazish
   registerLevelPriceHandlers()
   registerTimerHandlers()
 
-  // 🪟 Oynani ishga tushurish
+  // Oynani ishga tushirish
   createWindow()
 
-  // 🖥 MacOS uchun
+  // MacOS uchun
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

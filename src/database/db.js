@@ -3,22 +3,20 @@ import { join, basename, extname } from 'path'
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
 import extractIcon from 'extract-file-icon'
 
-// 📁 DB joylashuvi
+// 📁 DB va ICON papkasi
 const dbDir = join(process.cwd(), 'data')
 if (!existsSync(dbDir)) mkdirSync(dbDir, { recursive: true })
-
 const dbPath = join(dbDir, 'napster.db')
 const db = new Database(dbPath)
 
-// 📁 ICONS papkasi (frontend uchun mos)
 const iconsDir = join(process.cwd(), 'src', 'renderer', 'public', 'icons')
 if (!existsSync(iconsDir)) mkdirSync(iconsDir, { recursive: true })
 
 const DEFAULT_ICON_PATH = '/icons/default-icon.png'
 
-// ======== JADVALLAR ========
+// ========== JADVALLAR ==========
 
-// ✅ levels jadvali
+// Levels
 db.prepare(`
   CREATE TABLE IF NOT EXISTS levels (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -26,13 +24,11 @@ db.prepare(`
     is_active BOOLEAN DEFAULT 1
   )
 `).run()
-
-// Standart levels
 const defaultLevels = ['Standard', 'Silver', 'Gold', 'Platinum', 'Diamond']
 const insertLevel = db.prepare(`INSERT OR IGNORE INTO levels (name, is_active) VALUES (?, 1)`)
 defaultLevels.forEach(level => insertLevel.run(level))
 
-// ✅ tabs jadvali (categories o‘rniga)
+// Tabs
 db.prepare(`
   CREATE TABLE IF NOT EXISTS tabs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -41,8 +37,6 @@ db.prepare(`
     empty BOOLEAN DEFAULT 1
   )
 `).run()
-
-// DEFAULT 5 ta tab yaratish (agar bo‘lmasa)
 const defaultTabs = [
   { id: 1, name: 'Action', sort_order: 1, empty: 1 },
   { id: 2, name: 'Arcade', sort_order: 2, empty: 1 },
@@ -57,7 +51,7 @@ for (const tab of defaultTabs) {
   `).run(tab.id, tab.name, tab.sort_order, tab.empty)
 }
 
-// ✅ users jadvali
+// Users
 db.prepare(`
   CREATE TABLE IF NOT EXISTS users (
     mac TEXT PRIMARY KEY,
@@ -69,7 +63,7 @@ db.prepare(`
   )
 `).run()
 
-// ✅ sessions jadvali
+// Sessions
 db.prepare(`
   CREATE TABLE IF NOT EXISTS sessions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -81,7 +75,7 @@ db.prepare(`
   )
 `).run()
 
-// ✅ logs jadvali
+// Logs
 db.prepare(`
   CREATE TABLE IF NOT EXISTS logs (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -92,7 +86,7 @@ db.prepare(`
   )
 `).run()
 
-/// ✅ games jadvali (order bilan)
+// Games
 db.prepare(`
   CREATE TABLE IF NOT EXISTS games (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -105,50 +99,57 @@ db.prepare(`
     FOREIGN KEY (tabId) REFERENCES tabs(id)
   )
 `).run()
-// Iconni olish yoki defaultni qaytarish funksiyasi
-export function getOrSaveGameIcon(exePath, gameName = '') {
+
+// ========== FUNKSIYALAR ==========
+
+// Icon olish/saqlash
+function getOrSaveGameIcon(exePath, gameName = '') {
   try {
     if (!existsSync(exePath)) throw new Error('Exe mavjud emas')
-
     const iconBuffer = extractIcon(exePath, 32)
     if (!iconBuffer) throw new Error('Icon olinmadi')
-
     const iconFileName = `${gameName || basename(exePath, extname(exePath))}_${Date.now()}.ico`
     const iconFullPath = join(iconsDir, iconFileName)
     writeFileSync(iconFullPath, iconBuffer)
-
     return `/icons/${iconFileName}`
   } catch (e) {
     return DEFAULT_ICON_PATH
   }
 }
 
-// 🎮 O‘yin qo‘shish funksiyasi (icon va tabId bilan)
-export function addGame({ name, exe, path, icon, tabId = 1 }) {
+// O‘yin qo‘shish (icon va tabId bilan)
+function addGame({ name, exe, path, icon, tabId = 1 }) {
   db.prepare(`
     INSERT OR IGNORE INTO games (name, exe, path, icon, tabId)
     VALUES (?, ?, ?, ?, ?)
   `).run(name, exe, path, icon || DEFAULT_ICON_PATH, tabId)
 }
 
-// 🎮 O‘yin avtomatik icon bilan qo‘shiladi
-export function addGameAutoIcon({ name, exe, path, tabId = 1 }) {
+// O‘yin avtomatik icon bilan
+function addGameAutoIcon({ name, exe, path, tabId = 1 }) {
   const icon = getOrSaveGameIcon(path, name)
   addGame({ name, exe, path, icon, tabId })
 }
 
-// 🎮 Barcha o‘yinlar, tabId bo‘yicha filtr bilan
-export function getAllGames(tabId) {
+// Barcha o‘yinlar, optional tabId bilan
+function getAllGames(tabId) {
   if (typeof tabId === 'number') {
     return db.prepare('SELECT * FROM games WHERE tabId = ? ORDER BY id ASC').all(tabId)
   }
   return db.prepare('SELECT * FROM games ORDER BY id ASC').all()
 }
 
-// 🎮 Barcha tabs
-export function getAllTabs() {
+// Tabs ro‘yxati
+function getAllTabs() {
   return db.prepare('SELECT * FROM tabs ORDER BY sort_order ASC, id ASC').all()
 }
 
-// 📤 DB obyektini eksport qilish
-export { db }
+// Exportlar
+export {
+  db,
+  getOrSaveGameIcon,
+  addGame,
+  addGameAutoIcon,
+  getAllGames,
+  getAllTabs
+}

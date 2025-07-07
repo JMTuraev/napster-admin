@@ -2,37 +2,30 @@
 
 import { db } from './db.js'
 
-/**
- * 📦 Jadvalni yaratish (bir martalik)
- */
-export function initTimerTable() {
+function initTimerTable() {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS timers (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       mac TEXT NOT NULL,
       start_time TEXT,
       end_time TEXT,
-      duration INTEGER,         -- sekundda (masalan: 3600)
-      mode TEXT,                -- 'time', 'price', 'vip'
-      price INTEGER,            -- agar price bo‘lsa
-      status TEXT DEFAULT 'running'  -- 'running' | 'finished'
+      duration INTEGER,
+      mode TEXT,
+      price INTEGER,
+      status TEXT DEFAULT 'running',
+      parent_timer_id INTEGER,
+      created_at TEXT DEFAULT (datetime('now'))
     )
   `).run()
 }
 
-/**
- * 🟢 Faol (ishlayotgan) sessionlar ro‘yxatini olish
- */
-export function getActiveTimers() {
+function getActiveTimers() {
   return db.prepare(`
     SELECT * FROM timers WHERE status = 'running'
   `).all()
 }
 
-/**
- * 🟢 Muayyan kompyuterning eng so‘nggi sessiyasini olish
- */
-export function getLatestTimerByMac(mac) {
+function getLatestTimerByMac(mac) {
   return db.prepare(`
     SELECT * FROM timers
     WHERE mac = ?
@@ -41,57 +34,73 @@ export function getLatestTimerByMac(mac) {
   `).get(mac)
 }
 
-/**
- * 🟢 Yangi timer boshlash
- */
-export function startTimer({ mac, start_time, duration, mode, price }) {
-  // ⚠️ Undefined qiymatlarni to‘g‘rilaymiz
-  if (price === undefined) price = null
-  duration = parseInt(duration) || 0
-
-  console.log('📥 TIMER INSERT:', {
-    mac,
-    start_time,
-    duration,
-    mode,
-    price
-  })
-
+function startTimer({ mac, duration, mode = 'time', price = null, parent_timer_id = null }) {
+  const now = new Date().toISOString()
+  const running = db.prepare(`
+    SELECT * FROM timers WHERE mac = ? AND status = 'running'
+  `).get(mac)
+  if (running) {
+    db.prepare(`
+      UPDATE timers SET status = 'finished', end_time = ?
+      WHERE id = ?
+    `).run(now, running.id)
+  }
   return db.prepare(`
-    INSERT INTO timers (mac, start_time, duration, mode, price, status)
-    VALUES (?, ?, ?, ?, ?, 'running')
-  `).run(mac, start_time, duration, mode, price)
+    INSERT INTO timers (mac, start_time, duration, mode, price, status, parent_timer_id, created_at)
+    VALUES (?, ?, ?, ?, ?, 'running', ?, ?)
+  `).run(mac, now, duration, mode, price, parent_timer_id, now)
 }
 
-/**
- * 🔴 Timer tugatish (status: finished va end_time qo‘yiladi)
- */
-export function stopTimer(id) {
+function stopTimer(id, status = 'finished') {
   const endTime = new Date().toISOString()
   return db.prepare(`
     UPDATE timers
-    SET status = 'finished', end_time = ?
+    SET status = ?, end_time = ?
     WHERE id = ?
-  `).run(endTime, id)
+  `).run(status, endTime, id)
 }
 
-/**
- * 🟡 Timerga qo‘shimcha vaqt qo‘shish (duration yangilash)
- */
-export function updateTimerDuration(id, newDuration) {
-  return db.prepare(`
-    UPDATE timers
-    SET duration = ?
-    WHERE id = ?
-  `).run(newDuration, id)
-}
-
-/**
- * 🧾 Barcha timerlar tarixini olish (admin/statistika uchun)
- */
-export function getAllTimers() {
+function getAllTimers() {
   return db.prepare(`
     SELECT * FROM timers
     ORDER BY start_time DESC
   `).all()
+}
+
+function extendTimer({ mac, duration, mode = 'time', price = null, old_timer_id }) {
+  stopTimer(old_timer_id, 'extended')
+  return startTimer({
+    mac,
+    duration,
+    mode,
+    price,
+    parent_timer_id: old_timer_id
+  })
+}
+
+function findTimers({ mac, status }) {
+  let q = 'SELECT * FROM timers WHERE 1=1'
+  const params = []
+  if (mac) {
+    q += ' AND mac = ?'
+    params.push(mac)
+  }
+  if (status) {
+    q += ' AND status = ?'
+    params.push(status)
+  }
+  q += ' ORDER BY start_time DESC'
+  return db.prepare(q).all(...params)
+}
+
+// Faqat bitta eksport:
+export {
+  initTimerTable,
+  getActiveTimers,
+  getLatestTimerByMac,
+  startTimer,
+  stopTimer,
+  getAllTimers,
+  extendTimer,
+  findTimers
 }
