@@ -12,46 +12,60 @@ import {
 
 /**
  * TIMER bilan bog‘liq barcha IPC handlerlarni ro‘yxatdan o‘tkazadi.
- * Bu funksiya main processda Faqat BIR MARTA chaqilishi kerak!
+ * io obyektini param sifatida qabul qiladi!
  */
-export function registerTimerHandlers() {
-  // 1. Faol timerlar (lockscreen yoki monitoring uchun)
-  ipcMain.handle('get-active-timers', () => getActiveTimers())
+export function registerTimerHandlers(io) {
+  console.log('[ADMIN] TIMER HANDLERS REGISTERED')
 
-  // 2. Bir kompyuterning oxirgi (eng so‘nggi) timerni olish
+  ipcMain.handle('get-active-timers', () => {
+    console.log('[ADMIN] get-active-timers IPC ishladi!')
+    return getActiveTimers()
+  })
+
   ipcMain.handle('get-latest-timer', (event, mac) => getLatestTimerByMac(mac))
 
-  // 3. Yangi timer boshlash (timer ochiladi, eski "running" tugatiladi)
   ipcMain.handle('start-timer', (event, data) => {
     try {
       if (!data.mac || !data.duration || data.duration <= 0) {
         throw new Error('Mac va duration to‘g‘ri berilishi shart')
       }
       const result = startTimer(data)
+      if (io && data.mac) {
+        io.emit('unlock', data.mac)
+        console.log('[SOCKET] UNLOCK yuborildi:', data.mac)
+      }
       return { success: true, id: result.lastInsertRowid }
     } catch (e) {
       console.error('❌ Timer boshlashda xatolik:', e)
       return { success: false, error: e.message }
     }
   })
-
-  // 4. Timer tugatish (timerId orqali)
-  ipcMain.handle('stop-timer', (event, id) => {
-    try {
-      stopTimer(id)
-      return { success: true }
-    } catch (e) {
-      console.error('❌ Timer tugatishda xatolik:', e)
-      return { success: false, error: e.message }
+ipcMain.handle('stop-timer', (event, id) => {
+  try {
+    const timer = stopTimer(id)
+    console.log('[DEBUG] stop-timer uchun timer:', timer)
+    if (io && timer && timer.mac) {
+      io.emit('lock', timer.mac)
+      console.log('[SOCKET] LOCK yuborildi:', timer.mac)
+    } else {
+      console.log('[SOCKET] LOCK yuborilmadi, timer yoki mac yo‘q:', timer)
     }
-  })
+    return { success: true }
+  } catch (e) {
+    console.error('❌ Timer tugatishda xatolik:', e)
+    return { success: false, error: e.message }
+  }
+})
 
-  // 5. Timer tugatish (MAC orqali oxirgi "running" ni topib tugatadi)
   ipcMain.handle('stop-timer-by-mac', (event, mac) => {
     try {
       const latest = getLatestTimerByMac(mac)
       if (latest?.status === 'running') {
         stopTimer(latest.id)
+        if (io && mac) {
+          io.emit('lock', mac)
+          console.log('[SOCKET] LOCK yuborildi:', mac)
+        }
         return { success: true }
       }
       return { success: false, message: 'Faol timer topilmadi' }
@@ -61,7 +75,6 @@ export function registerTimerHandlers() {
     }
   })
 
-  // 6. Timerga vaqt qo‘shish (uzaytirish, yangi row)
   ipcMain.handle('extend-timer', (event, { mac, minutes }) => {
     try {
       const latest = getLatestTimerByMac(mac)
@@ -83,6 +96,5 @@ export function registerTimerHandlers() {
     }
   })
 
-  // 7. Statistika — barcha timerlar (masalan, admin uchun)
   ipcMain.handle('get-all-timers', () => getAllTimers())
 }

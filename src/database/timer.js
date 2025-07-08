@@ -52,13 +52,18 @@ function startTimer({ mac, duration, mode = 'time', price = null, parent_timer_i
 }
 
 function stopTimer(id, status = 'finished') {
+  const timer = db.prepare('SELECT * FROM timers WHERE id = ?').get(id) // Avval obyektni olib olamiz!
+  if (!timer) return null
   const endTime = new Date().toISOString()
-  return db.prepare(`
+  db.prepare(`
     UPDATE timers
     SET status = ?, end_time = ?
     WHERE id = ?
   `).run(status, endTime, id)
+  // end_time ham o‘zgargan obyektni qaytaramiz (yangi obyekt)
+  return { ...timer, status, end_time: endTime }
 }
+
 
 function getAllTimers() {
   return db.prepare(`
