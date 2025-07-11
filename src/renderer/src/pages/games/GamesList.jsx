@@ -61,12 +61,12 @@ export default function GamesList({
   const [contextMenu, setContextMenu] = useState({ show: false, x: 0, y: 0, game: null })
   const menuRef = useRef(null)
 
-  // Drag & Drop uchun sensorlar
+  // Drag & Drop sensor
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } })
   )
 
-  // Context menyuni boshqarish
+  // Context menu
   useEffect(() => {
     function handleClickOutside(event) {
       if (menuRef.current && !menuRef.current.contains(event.target)) {
@@ -79,7 +79,7 @@ export default function GamesList({
     return () => document.removeEventListener('click', handleClickOutside)
   }, [contextMenu.show])
 
-  // Drag tugagach, yangi tartibni qaytarish
+  // Drag drop
   const handleDragEnd = (event) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
@@ -103,7 +103,7 @@ export default function GamesList({
     if (contextMenu.game && onChangeGameTab) {
       onChangeGameTab(contextMenu.game.id, tabId)
       setContextMenu({ show: false, x: 0, y: 0, game: null })
-      onFetchGames(contextMenu.game.id)
+      onFetchGames && onFetchGames(contextMenu.game.id)
     }
   }
 
@@ -116,6 +116,10 @@ export default function GamesList({
 
   const handleDelete = () => {
     if (contextMenu.game) {
+      // TO‘G‘RI: path dan foydalanamiz
+      if (window.api && window.api.deleteGameIcon && contextMenu.game.path) {
+        window.api.deleteGameIcon(contextMenu.game.path)
+      }
       onDeleteGame(contextMenu.game)
       setContextMenu({ show: false, x: 0, y: 0, game: null })
     }
@@ -162,7 +166,7 @@ export default function GamesList({
         </SortableContext>
       </DndContext>
 
-      {/* KONTEKST MENYU */}
+      {/* Context menu */}
       {contextMenu.show && (
         <div
           ref={menuRef}

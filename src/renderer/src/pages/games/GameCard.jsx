@@ -1,4 +1,5 @@
 import React from 'react'
+import { getGameIconPath } from '../../utils/getGameIconName'
 
 export default function GameCard({
   game,
@@ -10,9 +11,11 @@ export default function GameCard({
   onDoubleClick,
   onContextMenu,
   onMouseOver,
-  onMouseOut,
-  defaultIcon
+  onMouseOut
 }) {
+  // 1. Ikki variant: agar massivda icon bor — ishlat, bo‘lmasa algoritmdan ol
+  const icon = game.icon || (game.path ? getGameIconPath(game.path) : '/icons/default.png')
+
   return (
     <div
       ref={setNodeRef}
@@ -43,11 +46,14 @@ export default function GameCard({
       onMouseOut={onMouseOut}
     >
       <img
-        src={game.icon || defaultIcon}
+        src={icon}
         alt="icon"
         width={48}
         height={48}
-        onError={e => { e.target.src = defaultIcon }}
+        onError={e => {
+          e.currentTarget.onerror = null
+          e.currentTarget.src = '/icons/default.png'
+        }}
         style={{
           borderRadius: 12,
           background: '#181b1f',

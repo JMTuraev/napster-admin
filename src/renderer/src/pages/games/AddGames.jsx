@@ -1,67 +1,81 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 export default function AddGames({ onGameAdded }) {
   const [path, setPath] = useState('')
   const [loading, setLoading] = useState(false)
-  const [fallbackTimer, setFallbackTimer] = useState(null)
   const [status, setStatus] = useState('')
+  const fallbackTimer = useRef(null)
 
   useEffect(() => {
-    const handleResult = (res) => {
-      clearTimeout(fallbackTimer)
+    // Serverdan javob kelganda
+    function handleResult(res) {
+      if (fallbackTimer.current) {
+        clearTimeout(fallbackTimer.current)
+        fallbackTimer.current = null
+      }
       setLoading(false)
 
       if (res.status === 'exists') {
-        console.warn('⚠️ Bu path allaqachon mavjud:', res.path)
         setStatus('Bu path allaqachon mavjud!')
       } else if (res.status === 'error') {
-        console.error('❌ Xatolik:', res.message)
         setStatus('Xatolik: ' + res.message)
       } else if (res.status === 'added') {
-        console.log('✅ O‘yin muvaffaqiyatli qo‘shildi:', res.game.name)
         setStatus('O‘yin muvaffaqiyatli qo‘shildi!')
         setPath('')
         onGameAdded?.()
       }
     }
 
-    window.api.socket.on('game-add-result', handleResult)
+    window.api?.socket?.on('game-add-result', handleResult)
     return () => {
-      window.api.socket.off('game-add-result', handleResult)
+      window.api?.socket?.off('game-add-result', handleResult)
+      if (fallbackTimer.current) {
+        clearTimeout(fallbackTimer.current)
+        fallbackTimer.current = null
+      }
     }
-  }, [fallbackTimer, onGameAdded])
+  }, [onGameAdded])
 
+  // O‘yin qo‘shish
   const handleAddGame = () => {
     const trimmedPath = path.trim()
     if (!trimmedPath) {
-      console.warn('❗️ Path kiritilmadi')
       setStatus('Path kiritilmadi!')
       return
     }
-
     setLoading(true)
     setStatus('')
-    window.api.socket.emit('add-game', { path: trimmedPath })
 
-    const timer = setTimeout(() => {
+    // Emit qilamiz
+    window.api?.socket?.emit('add-game', { path: trimmedPath })
+
+    // Fallback timeout
+    if (fallbackTimer.current) clearTimeout(fallbackTimer.current)
+    fallbackTimer.current = setTimeout(() => {
       setLoading(false)
       setStatus('Serverdan javob kelmadi.')
     }, 5000)
-    setFallbackTimer(timer)
   }
 
   return (
     <div style={{ padding: 16 }}>
-      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 18 }}>🎮 O‘yinlar boshqaruvi</h1>
+      <h1 style={{ fontSize: 28, fontWeight: 700, marginBottom: 18 }}>
+        🎮 O‘yinlar boshqaruvi
+      </h1>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
         <input
           value={path}
-          onChange={(e) => setPath(e.target.value)}
+          onChange={e => setPath(e.target.value)}
           style={{
-            padding: '7px 10px', border: '1px solid #ccc', borderRadius: 7, width: 320, fontSize: 16
+            padding: '7px 10px',
+            border: '1px solid #ccc',
+            borderRadius: 7,
+            width: 320,
+            fontSize: 16
           }}
-          placeholder="C:\\Games\\GTA\\gta_sa.exe"
+          placeholder="C:\Games\GTA\gta_sa.exe"
+          disabled={loading}
         />
         <button
           onClick={handleAddGame}
@@ -88,7 +102,13 @@ export default function AddGames({ onGameAdded }) {
       )}
 
       {!!status && (
-        <div style={{ fontSize: 16, color: status.includes('muvaffaqiyatli') ? '#28c76f' : '#f66', marginTop: 8 }}>
+        <div
+          style={{
+            fontSize: 16,
+            color: status.includes('muvaffaqiyatli') ? '#28c76f' : '#f66',
+            marginTop: 8
+          }}
+        >
           {status}
         </div>
       )}

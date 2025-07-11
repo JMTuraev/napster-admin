@@ -11,12 +11,15 @@ export function handleGameEvents(socket, io) {
   socket.on('add-game', (data) => {
     try {
       const path = data?.path?.trim()
+      /*
       if (!path || !path.toLowerCase().endsWith('.exe') || !path.includes('\\')) {
         throw new Error('Noto‘g‘ri path')
       }
-      if (!fs.existsSync(path)) throw new Error('.exe fayli mavjud emas')
-
-      const exists = getAllGames().some(g => g.path === path)
+      
+      // ----- Quyidagi qator comment qilingan -----
+       if (!fs.existsSync(path)) throw new Error('.exe fayli mavjud emas')
+*/
+      const exists = getAllGames().some(g => g.path === path) 
       if (exists) {
         socket.emit('game-add-result', { status: 'exists', path })
         return

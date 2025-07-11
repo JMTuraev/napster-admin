@@ -1,33 +1,18 @@
-// src/preload/index.js
+const { contextBridge, ipcRenderer } = require('electron')
+const { electronAPI } = require('@electron-toolkit/preload')
+const { exec } = require('child_process')
+const { io } = require('socket.io-client')
+const { networkInterfaces } = require('os')
+const path = require('path')
+const { getGameIcon, deleteGameIcon } = require('./utils/cacheGameIcon')
 
-import { contextBridge, ipcRenderer } from 'electron'
-import { electronAPI } from '@electron-toolkit/preload'
-import { exec } from 'child_process'
-import { io } from 'socket.io-client'
-import { networkInterfaces } from 'os'
-
-// 📡 SOCKET ulanish (localhost:3000)
+// SOCKET (o‘zgarmaydi)
 const socket = io('http://127.0.0.1:3000', {
   transports: ['websocket'],
   reconnection: true
 })
 
-// 🎮 O‘yin ishga tushirish funksiyasi
-function runGame(path) {
-  exec(`"${path}"`, (error, stdout, stderr) => {
-    if (error) {
-      console.error('❌ Game start error:', error.message)
-      return
-    }
-    if (stderr) {
-      console.warn('⚠️ Game stderr:', stderr)
-      return
-    }
-    console.log('✅ Game output:', stdout)
-  })
-}
-
-// 🧠 MAC manzilni olish (asosiy network interfeysdan)
+// MAC olish
 function getMacAddress() {
   const nets = networkInterfaces()
   for (const name of Object.keys(nets)) {
@@ -45,9 +30,36 @@ function getMacAddress() {
   return '00:00:00:00:00:00'
 }
 
-// 📡 API obyekt — renderer uchun barcha funksiyalar
+// 🎮 O‘yin ishga tushirish
+function runGame(gamePath) {
+  exec(`"${gamePath}"`, (error, stdout, stderr) => {
+    if (error) {
+      console.error('❌ Game start error:', error.message)
+      return
+    }
+    if (stderr) {
+      console.warn('⚠️ Game stderr:', stderr)
+      return
+    }
+    console.log('✅ Game output:', stdout)
+  })
+}
+
+// ICON front uchun (ENG MUHIM QISM)
+function getGameIconForUI(exePath) {
+  const iconFile = getGameIcon(exePath) // bu E:\src\... yoki C:\... ni qaytaradi
+  if (!iconFile) return '/icons/default.png'
+  const filename = path.basename(iconFile)
+  return `/icons/${filename}` // faqat public/icons/ dan ochiladi!
+}
+
+// ICON o‘chirish
+function deleteGameIconForUI(exePath) {
+  deleteGameIcon(exePath)
+}
+
+// API — frontendga expose qilinadi
 const api = {
-  // SOCKET funktsiyalari
   socket: {
     on: (...args) => socket.on(...args),
     once: (...args) => socket.once(...args),
@@ -56,25 +68,22 @@ const api = {
     connected: () => socket.connected,
     id: () => socket.id
   },
-  // Game run
   runGame,
-  // MAC
   getMac: getMacAddress,
-  // IPC invoke (main bilan asinxron bog‘lanish)
-  invoke: (...args) => ipcRenderer.invoke(...args)
+  invoke: (...args) => ipcRenderer.invoke(...args),
+  getGameIcon: getGameIconForUI,
+  deleteGameIcon: deleteGameIconForUI
 }
 
-// 🔐 Context isolation tekshiruvi va expose qilish
+// Context isolation va window.api ni expose qilish
 try {
   if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
     contextBridge.exposeInMainWorld('api', api)
   } else {
-    // ESKI Electron uchun fallback
     window.electron = electronAPI
     window.api = api
   }
 } catch (err) {
   console.error('❌ Preload expose error:', err)
 }
-

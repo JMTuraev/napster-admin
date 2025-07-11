@@ -18,7 +18,7 @@ export function registerTimerHandlers(io) {
   console.log('[ADMIN] TIMER HANDLERS REGISTERED')
 
   ipcMain.handle('get-active-timers', () => {
-    console.log('[ADMIN] get-active-timers IPC ishladi!')
+  
     return getActiveTimers()
   })
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import AddGames from './AddGames.jsx'
 import GamesList from './GamesList.jsx'
 import TabsList from './TabsList.jsx'
@@ -8,78 +8,81 @@ export default function Games() {
   const [tabs, setTabs] = useState([])
   const [activeTabId, setActiveTabId] = useState(1)
 
-  // O‘yinlar va tabs-ni serverdan olish
-  const fetchGames = (tabId = 1) => {
-    window.api.socket.emit('get-games', tabId)
-  }
-  const fetchTabs = () => {
-    window.api.socket.emit('get-tabs')
-  }
+  // O‘yinlar va tabs-ni serverdan olish (useCallback - referensial stability uchun)
+  const fetchGames = useCallback((tabId = 1) => {
+    window.api?.socket?.emit('get-games', tabId)
+  }, [])
+  const fetchTabs = useCallback(() => {
+    window.api?.socket?.emit('get-tabs')
+  }, [])
 
+  // O‘yin va tablarni real-time olish va listenerlarni boshqarish
   useEffect(() => {
     fetchTabs()
     fetchGames(activeTabId)
 
-    // socket event handlerlar
-    const handleGames = (games) => setGames(games)
-    const handleTabs = (tabs) => {
+    // Event handlerlar
+    const handleGames = games => setGames(games)
+    const handleTabs = tabs => {
       setTabs(tabs)
       if (!tabs.some(tab => tab.id === activeTabId)) {
         setActiveTabId(1)
         fetchGames(1)
       }
     }
-    window.api.socket.on('games', handleGames)
-    window.api.socket.on('tabs', handleTabs)
-    window.api.socket.on('new-game', () => fetchGames(activeTabId))
-    window.api.socket.on('game-deleted', () => fetchGames(activeTabId))
+
+    window.api?.socket?.on('games', handleGames)
+    window.api?.socket?.on('tabs', handleTabs)
+    window.api?.socket?.on('new-game', () => fetchGames(activeTabId))
+    window.api?.socket?.on('game-deleted', () => fetchGames(activeTabId))
 
     return () => {
-      window.api.socket.off('games', handleGames)
-      window.api.socket.off('tabs', handleTabs)
-      window.api.socket.off('new-game')
-      window.api.socket.off('game-deleted')
+      window.api?.socket?.off('games', handleGames)
+      window.api?.socket?.off('tabs', handleTabs)
+      window.api?.socket?.off('new-game')
+      window.api?.socket?.off('game-deleted')
     }
     // eslint-disable-next-line
-  }, [activeTabId])
+  }, [activeTabId, fetchGames, fetchTabs])
 
   // Tabni o‘zgartirish
-  const handleTabChange = (tabId) => {
+  const handleTabChange = tabId => {
     setActiveTabId(tabId)
     fetchGames(tabId)
   }
 
   // Tab nomini tahrirlash
   const handleEditTab = (tabId, newName) => {
-    window.api.socket.emit('edit-tab', { id: tabId, name: newName })
+    window.api?.socket?.emit('edit-tab', { id: tabId, name: newName })
     fetchTabs()
   }
 
-  // O‘yin ishga tushirish
-  const handleRunGame = (game) => {
-    if (!game.path) return alert('❗️ Fayl yo‘li topilmadi')
-    window.electron.ipcRenderer
-      .invoke('run-game', game.path)
-      .then(() => console.log('🎮 O‘yin ishga tushdi:', game.path))
-      .catch((err) => alert('❌ Xatolik: ' + err.message))
+  // O‘yin ishga tushirish (ipcRenderer invoke ishlatilsa)
+  const handleRunGame = game => {
+    if (!game.path && !game.exePath) return alert('❗️ Fayl yo‘li topilmadi')
+    const exePath = game.path || game.exePath
+    window.electron?.ipcRenderer
+      .invoke('run-game', exePath)
+      .then(() => console.log('🎮 O‘yin ishga tushdi:', exePath))
+      .catch(err => alert('❌ Xatolik: ' + err.message))
   }
 
-  // O‘chirish
-  const handleDeleteGame = (game) => {
+  // O‘yin o‘chirish
+  const handleDeleteGame = game => {
     const confirmed = window.confirm(`"${game.exe}" o‘yinini o‘chirmoqchimisiz?`)
-    if (confirmed) window.api.socket.emit('delete-game', game.id)
+    if (confirmed) window.api?.socket?.emit('delete-game', game.id)
   }
 
-  // Tahrirlash (demo uchun)
-  const handleEditGame = (game) => {
+  // O‘yin tahrirlash (demo)
+  const handleEditGame = game => {
     alert(`Tahrirlash oynasi ochiladi (demo): ${game.exe}`)
   }
 
   // DRAG&DROP: yangi tartibni UI va serverga jo‘natish
-  const handleOrderChange = (newGames) => {
+  const handleOrderChange = newGames => {
     setGames(newGames) // UI-da darhol o‘zgaradi
     const order = newGames.map((g, idx) => ({ id: g.id, order: idx }))
-    window.api.socket.emit('update-game-order', {
+    window.api?.socket?.emit('update-game-order', {
       tabId: activeTabId,
       order
     })
@@ -87,8 +90,9 @@ export default function Games() {
 
   // Game tab o‘zgarganda
   const handleChangeGameTab = (gameId, newTabId) => {
-    window.api.socket.emit('change-game-tab', { gameId, newTabId })
+    window.api?.socket?.emit('change-game-tab', { gameId, newTabId })
   }
+  
 
   return (
     <div style={{ padding: 28, maxWidth: 900, margin: '0 auto' }}>
