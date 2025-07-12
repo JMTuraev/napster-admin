@@ -1,11 +1,23 @@
-// src/main/index.js
-
+// Electron asosiy modullari
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import { join, basename } from 'path'
+import { copyFileSync, existsSync, mkdirSync } from 'fs'
+
+// Electron Toolkit
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 
+// DATABASE va SERVICE
 import { db } from '../database/db.js'
+import { initBarTable } from '../database/barService.js'
+import { initOrderTable } from '../database/orderService.js'
+import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
+
+// HANDLERLAR (yangi)
+import { registerBarHandlers } from './barHandlers.js'
+import { registerOrderHandlers } from './orderHandlers.js'
+
+// SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
 import { handleTabsEvents } from './tabsHandlers.js'
@@ -57,14 +69,20 @@ app.whenReady().then(() => {
   electronApp.setAppUserModelId('com.electron')
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
+  // ==== JADVAL YARATISH ====
+  initBarTable()
+  initOrderTable()
+  initLevelsAndTabsAndGames()
+  initTimerTable()
+
+  // ==== IPC HANDLERS ====
+  // Foydalanuvchi va asosiy IPC handlerlar
   ipcMain.on('ping', () => console.log('pong'))
 
-  // USER IPC HANDLERLAR
   ipcMain.handle('add-user', (event, user) => {
     const now = new Date().toISOString()
     const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
     const defaultStatus = 'online'
-
     if (!exists) {
       db.prepare(`
         INSERT INTO users (mac, number, status, created_at)
@@ -72,21 +90,37 @@ app.whenReady().then(() => {
       `).run(user.mac, defaultStatus, now)
       return { status: 'added', mac: user.mac }
     } else {
-      db.prepare(`
-        UPDATE users SET status = ? WHERE mac = ?
-      `).run(defaultStatus, user.mac)
+      db.prepare(`UPDATE users SET status = ? WHERE mac = ?`).run(defaultStatus, user.mac)
       return { status: 'updated', mac: user.mac }
     }
   })
 
-  ipcMain.handle('get-users', () => {
-    return db.prepare('SELECT * FROM users ORDER BY number ASC').all()
+  ipcMain.handle('get-users', () => db.prepare('SELECT * FROM users ORDER BY number ASC').all())
+
+  // ==== YANGI: IMAGE COPY IPC HANDLER ====
+  ipcMain.handle('copyImageFile', (event, srcPath) => {
+    try {
+      if (!srcPath) return ''
+      const fileName = Date.now() + '_' + basename(srcPath)
+      const destDir = join(process.cwd(), 'src', 'renderer', 'public', 'images')
+      if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
+      const destPath = join(destDir, fileName)
+      copyFileSync(srcPath, destPath)
+      return '/images/' + fileName // Front uchun public path
+    } catch (e) {
+      console.error('[copyImageFile]', e)
+      return ''
+    }
   })
 
+  // ==== MODULLAR IPC HANDLARLARNI ULAYMIZ ====
+  registerBarHandlers()
+  registerOrderHandlers()
+
+  // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
   ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
-  // SOCKET va TIMER HANDLERS
   io = startSocketServer()
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
@@ -94,12 +128,10 @@ app.whenReady().then(() => {
     handleTabsEvents(socket, io)
   })
 
-  initTimerTable()
   registerLevelPriceHandlers()
-  registerTimerHandlers(io)  // <-- MUHIM!
+  registerTimerHandlers(io)
 
   createWindow()
-
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
   })

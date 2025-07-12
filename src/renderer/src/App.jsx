@@ -3,7 +3,7 @@ import Games from './pages/games/Games'
 import Timer from './pages/timer/Timer'
 import Stats from './pages/Stats'
 import Bookings from './pages/Bookings'
-import Bar from './pages/Bar'
+import Bar from './pages/bar/Bar' 
 import Computers from './pages/Computers'
 
 export default function App() {

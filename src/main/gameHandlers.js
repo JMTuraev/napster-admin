@@ -1,8 +1,11 @@
 import fs from 'fs'
 import { execFile } from 'child_process'
-import { addGameAutoIcon, getAllGames, db } from '../database/db.js'
 import { basename, join } from 'path'
 
+// CRUD va xizmat funksiyalar gamesService.js dan import qilinadi
+import { addGameAutoIcon, getAllGames } from '../database/gamesService.js'
+// Faqat db instance kerak bo‘lsa, db.js dan:
+import { db } from '../database/db.js'
 const iconsDir = join(process.cwd(), 'src', 'renderer', 'public', 'icons')
 
 // 🟢 SOCKET handlerlari
@@ -15,10 +18,10 @@ export function handleGameEvents(socket, io) {
       if (!path || !path.toLowerCase().endsWith('.exe') || !path.includes('\\')) {
         throw new Error('Noto‘g‘ri path')
       }
-      
+*/      
       // ----- Quyidagi qator comment qilingan -----
        if (!fs.existsSync(path)) throw new Error('.exe fayli mavjud emas')
-*/
+
       const exists = getAllGames().some(g => g.path === path) 
       if (exists) {
         socket.emit('game-add-result', { status: 'exists', path })

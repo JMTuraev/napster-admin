@@ -1,18 +1,25 @@
+// src/preload/index.js
+
 const { contextBridge, ipcRenderer } = require('electron')
 const { electronAPI } = require('@electron-toolkit/preload')
 const { exec } = require('child_process')
 const { io } = require('socket.io-client')
 const { networkInterfaces } = require('os')
 const path = require('path')
-const { getGameIcon, deleteGameIcon } = require('./utils/cacheGameIcon')
 
-// SOCKET (o‘zgarmaydi)
+// --- (Optional) Game icon uchun cache funksiyalari ---
+let getGameIcon, deleteGameIcon
+try {
+  ({ getGameIcon, deleteGameIcon } = require('./utils/cacheGameIcon'))
+} catch {}
+
+// --- SOCKET ulash (faqat kerak bo‘lsa) ---
 const socket = io('http://127.0.0.1:3000', {
   transports: ['websocket'],
   reconnection: true
 })
 
-// MAC olish
+// MAC manzil olish
 function getMacAddress() {
   const nets = networkInterfaces()
   for (const name of Object.keys(nets)) {
@@ -30,7 +37,7 @@ function getMacAddress() {
   return '00:00:00:00:00:00'
 }
 
-// 🎮 O‘yin ishga tushirish
+// O‘yin ishga tushirish
 function runGame(gamePath) {
   exec(`"${gamePath}"`, (error, stdout, stderr) => {
     if (error) {
@@ -45,21 +52,21 @@ function runGame(gamePath) {
   })
 }
 
-// ICON front uchun (ENG MUHIM QISM)
+// ICON (frontend uchun)
 function getGameIconForUI(exePath) {
-  const iconFile = getGameIcon(exePath) // bu E:\src\... yoki C:\... ni qaytaradi
+  if (!getGameIcon) return '/icons/default.png'
+  const iconFile = getGameIcon(exePath)
   if (!iconFile) return '/icons/default.png'
   const filename = path.basename(iconFile)
-  return `/icons/${filename}` // faqat public/icons/ dan ochiladi!
+  return `/icons/${filename}`
 }
-
-// ICON o‘chirish
 function deleteGameIconForUI(exePath) {
-  deleteGameIcon(exePath)
+  if (deleteGameIcon) deleteGameIcon(exePath)
 }
 
-// API — frontendga expose qilinadi
+// ==== API obyekt: frontend uchun hamma IPC va funksiya ====
 const api = {
+  // Socket funksiyalar
   socket: {
     on: (...args) => socket.on(...args),
     once: (...args) => socket.once(...args),
@@ -68,14 +75,18 @@ const api = {
     connected: () => socket.connected,
     id: () => socket.id
   },
+  // Boshqa util/funksiyalar
   runGame,
   getMac: getMacAddress,
-  invoke: (...args) => ipcRenderer.invoke(...args),
   getGameIcon: getGameIconForUI,
-  deleteGameIcon: deleteGameIconForUI
+  deleteGameIcon: deleteGameIconForUI,
+  // CRUD uchun universal invoke
+  invoke: (...args) => ipcRenderer.invoke(...args),
+  // Rasm yuklash uchun
+  copyImageFile: (srcPath) => ipcRenderer.invoke('copyImageFile', srcPath)
 }
 
-// Context isolation va window.api ni expose qilish
+// Expose to window.api
 try {
   if (process.contextIsolated) {
     contextBridge.exposeInMainWorld('electron', electronAPI)
