@@ -11,23 +11,39 @@ export default function OrderList({ orders, items, onChangeStatus }) {
         </div>
       )}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: 16 }}>
-        {orders.filter(order => order.status === 'Не оплачен').map(order => {
-          const item = items.find(i => i.id === order.itemId)
-          return (
+        {orders
+          .filter(order => order.status === 'Не оплачен')
+          .map(order => (
             <div key={order.id}
               style={{
                 background: '#23243e',
                 borderRadius: 12,
                 color: '#fff',
                 padding: 16,
-                width: 220,
+                width: 260,
                 boxShadow: '0 2px 8px #191e3a40',
                 position: 'relative'
               }}>
-              <div style={{ fontWeight: 600 }}>{item ? item.name : "Товар"}</div>
+              <div style={{ fontWeight: 600, marginBottom: 6 }}>Товары:</div>
+              <div style={{ marginBottom: 8 }}>
+                {order.items.map((orderItem, idx) => {
+                  const item = items.find(i => i.id === orderItem.item_id)
+                  return (
+                    <div key={orderItem.item_id} style={{ marginBottom: 4, paddingLeft: 4 }}>
+                      <span style={{ fontWeight: 500 }}>
+                        {item ? item.name : "Товар"}
+                      </span>
+                      {' — '}
+                      <span>
+                        {orderItem.quantity} шт x {orderItem.price} сум
+                        {' = '}
+                        <b>{orderItem.quantity * orderItem.price} сум</b>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div>
               <div>Стол: <b>{order.stol || '-'}</b></div>
-              <div>Кол-во: <b>{order.quantity}</b></div>
-              <div>Цена: <b>{order.price} сум</b></div>
               <div>Дата: {order.date}</div>
               <div>
                 Статус:
@@ -39,6 +55,13 @@ export default function OrderList({ orders, items, onChangeStatus }) {
                   marginLeft: 6,
                   fontWeight: 600
                 }}>{order.status}</span>
+              </div>
+              {/* Итоговая сумма по всем товарам */}
+              <div style={{ margin: '8px 0', fontWeight: 600 }}>
+                Общая сумма:&nbsp;
+                <span style={{ color: '#f8b400' }}>
+                  {order.items.reduce((sum, i) => sum + i.quantity * i.price, 0)} сум
+                </span>
               </div>
               <div style={{ marginTop: 9, display: 'flex', gap: 7 }}>
                 <button
@@ -57,8 +80,7 @@ export default function OrderList({ orders, items, onChangeStatus }) {
                 >Отказ</button>
               </div>
             </div>
-          )
-        })}
+          ))}
       </div>
     </div>
   )

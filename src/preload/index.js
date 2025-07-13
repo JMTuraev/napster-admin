@@ -7,29 +7,24 @@ const { io } = require('socket.io-client')
 const { networkInterfaces } = require('os')
 const path = require('path')
 
-// --- (Optional) Game icon uchun cache funksiyalari ---
+// --- Game icon uchun optional cache ---
 let getGameIcon, deleteGameIcon
 try {
   ({ getGameIcon, deleteGameIcon } = require('./utils/cacheGameIcon'))
 } catch {}
 
-// --- SOCKET ulash (faqat kerak bo‘lsa) ---
+// SOCKET (faqat kerak bo‘lsa)
 const socket = io('http://127.0.0.1:3000', {
   transports: ['websocket'],
   reconnection: true
 })
 
-// MAC manzil olish
+// MAC adres olish
 function getMacAddress() {
   const nets = networkInterfaces()
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
-      if (
-        !net.internal &&
-        net.mac &&
-        net.mac !== '00:00:00:00:00:00' &&
-        net.family === 'IPv4'
-      ) {
+      if (!net.internal && net.mac && net.mac !== '00:00:00:00:00:00' && net.family === 'IPv4') {
         return net.mac
       }
     }
@@ -52,7 +47,7 @@ function runGame(gamePath) {
   })
 }
 
-// ICON (frontend uchun)
+// ICON front uchun (Game)
 function getGameIconForUI(exePath) {
   if (!getGameIcon) return '/icons/default.png'
   const iconFile = getGameIcon(exePath)
@@ -64,9 +59,9 @@ function deleteGameIconForUI(exePath) {
   if (deleteGameIcon) deleteGameIcon(exePath)
 }
 
-// ==== API obyekt: frontend uchun hamma IPC va funksiya ====
+// ==== API: Frontend uchun universal funksiyalar va IPC ====
 const api = {
-  // Socket funksiyalar
+  // Socket
   socket: {
     on: (...args) => socket.on(...args),
     once: (...args) => socket.once(...args),
@@ -75,14 +70,13 @@ const api = {
     connected: () => socket.connected,
     id: () => socket.id
   },
-  // Boshqa util/funksiyalar
   runGame,
   getMac: getMacAddress,
   getGameIcon: getGameIconForUI,
   deleteGameIcon: deleteGameIconForUI,
-  // CRUD uchun universal invoke
+  // **IPC invoke universal**: Bar va Order uchun:
   invoke: (...args) => ipcRenderer.invoke(...args),
-  // Rasm yuklash uchun
+  // Rasm yuklash uchun (optional)
   copyImageFile: (srcPath) => ipcRenderer.invoke('copyImageFile', srcPath)
 }
 

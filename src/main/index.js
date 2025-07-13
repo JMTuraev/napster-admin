@@ -12,19 +12,20 @@ import { db } from '../database/db.js'
 import { initBarTable } from '../database/barService.js'
 import { initOrderTable } from '../database/orderService.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
+import { initTimerTable } from '../database/timer.js'
+import { initUserTable } from '../database/userService.js' // <<< YANGI
 
-// HANDLERLAR (yangi)
+// HANDLERLAR
 import { registerBarHandlers } from './barHandlers.js'
 import { registerOrderHandlers } from './orderHandlers.js'
+import { registerLevelPriceHandlers } from './levelPriceHandler.js'
+import { registerTimerHandlers } from './timerHandler.js'
 
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
 import { handleTabsEvents } from './tabsHandlers.js'
 import './statusHandlers.js'
-import { registerLevelPriceHandlers } from './levelPriceHandler.js'
-import { registerTimerHandlers } from './timerHandler.js'
-import { initTimerTable } from '../database/timer.js'
 
 let io
 
@@ -70,15 +71,17 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   // ==== JADVAL YARATISH ====
+  initUserTable() // <--- users jadvali YARATISH
   initBarTable()
   initOrderTable()
   initLevelsAndTabsAndGames()
   initTimerTable()
 
   // ==== IPC HANDLERS ====
-  // Foydalanuvchi va asosiy IPC handlerlar
+  // Signal test
   ipcMain.on('ping', () => console.log('pong'))
 
+  // Foydalanuvchi qo‘shish va olish
   ipcMain.handle('add-user', (event, user) => {
     const now = new Date().toISOString()
     const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
@@ -95,7 +98,9 @@ app.whenReady().then(() => {
     }
   })
 
-  ipcMain.handle('get-users', () => db.prepare('SELECT * FROM users ORDER BY number ASC').all())
+  ipcMain.handle('get-users', () =>
+    db.prepare('SELECT * FROM users ORDER BY number ASC').all()
+  )
 
   // ==== YANGI: IMAGE COPY IPC HANDLER ====
   ipcMain.handle('copyImageFile', (event, srcPath) => {
@@ -113,9 +118,11 @@ app.whenReady().then(() => {
     }
   })
 
-  // ==== MODULLAR IPC HANDLARLARNI ULAYMIZ ====
+  // ==== MODULLAR IPC HANDLARLARNI ULASH ====
   registerBarHandlers()
   registerOrderHandlers()
+  registerLevelPriceHandlers()
+  registerTimerHandlers(io)
 
   // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
@@ -127,9 +134,6 @@ app.whenReady().then(() => {
     handleGameEvents(socket, io)
     handleTabsEvents(socket, io)
   })
-
-  registerLevelPriceHandlers()
-  registerTimerHandlers(io)
 
   createWindow()
   app.on('activate', () => {

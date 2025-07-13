@@ -1,6 +1,23 @@
 import { db } from './db.js'
 
 /**
+ * USERS jadvalini yaratish (agar hali yaratilmagan bo‘lsa)
+ */
+export function initUserTable() {
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS users (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      mac TEXT UNIQUE,
+      number INTEGER,
+      status TEXT,
+      created_at TEXT,
+      level_id INTEGER,
+      FOREIGN KEY (level_id) REFERENCES levels(id)
+    )
+  `).run()
+}
+
+/**
  * Foydalanuvchini qo‘shish yoki yangilash
  * @param {string} mac - MAC address
  * @returns {object} - { status, mac }
@@ -12,19 +29,15 @@ export function addOrUpdateUser(mac) {
   const existingUser = db.prepare('SELECT * FROM users WHERE mac = ?').get(mac)
 
   if (!existingUser) {
-    // Yangi foydalanuvchini qo‘shish — level_id kiritilishi shart!
+    // Yangi foydalanuvchini qo‘shish
     db.prepare(`
       INSERT INTO users (mac, number, status, created_at, level_id)
       VALUES (?, NULL, 'online', ?, NULL)
     `).run(mac, now)
-
     return { status: 'added', mac }
   } else {
     // Mavjud foydalanuvchini faqat statusini yangilash
-    db.prepare(`
-      UPDATE users SET status = 'online' WHERE mac = ?
-    `).run(mac)
-
+    db.prepare(`UPDATE users SET status = 'online' WHERE mac = ?`).run(mac)
     return { status: 'updated', mac }
   }
 }
@@ -34,7 +47,6 @@ export function addOrUpdateUser(mac) {
  * @returns {array} - foydalanuvchilar ro‘yxati
  */
 export function getAllUsers() {
-  // Agar sizga daraja nomi ham kerak bo‘lsa:
   return db.prepare(`
     SELECT users.*, levels.name AS level_name
     FROM users
