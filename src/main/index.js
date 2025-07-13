@@ -34,9 +34,11 @@ function createWindow() {
     kiosk: false,
     alwaysOnTop: false,
     frame: true,
+    title: "Game Booking",     
     fullscreen: false,
     closable: true,
-    autoHideMenuBar: false,
+    
+    autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
