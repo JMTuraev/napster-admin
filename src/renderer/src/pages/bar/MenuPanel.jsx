@@ -3,26 +3,42 @@ import React, { useRef } from "react";
 export default function MenuPanel({
   items, setItems, selected, setSelected, onOrderSubmit
 }) {
-  // --- Drag and drop uchun local ref lar
   const dragItem = useRef(null);
 
-  // --- Drag handlers
+  // Faqat remain>0 bo‘lganlarni ko‘rsatamiz
+  const displayItems = items.filter(i => i.remain > 0);
+
+  // DRAG & DROP -- faqat displayItems bo‘yicha
   const handleDragStart = (idx) => {
     dragItem.current = idx;
   };
 
   const handleDrop = (idx) => {
     const from = dragItem.current;
-    if (typeof from === 'number' && from !== idx) {
-      const arr = [...items];
+    if (typeof from === "number" && from !== idx) {
+      // displayItems tartibini yangilaymiz
+      const arr = [...displayItems];
       const [item] = arr.splice(from, 1);
       arr.splice(idx, 0, item);
-      setItems(arr);
+
+      // yangi idlar ketma-ketligi
+      const newOrderIds = arr.map(i => i.id);
+
+      // eski items tartibini yangilaymiz (ko‘rinmayotganlar pastda qoladi)
+      const itemsCopy = [...items].sort((a, b) => {
+        const ia = newOrderIds.indexOf(a.id);
+        const ib = newOrderIds.indexOf(b.id);
+        if (ia === -1 && ib === -1) return 0;
+        if (ia === -1) return 1;
+        if (ib === -1) return -1;
+        return ia - ib;
+      });
+      setItems(itemsCopy);
     }
     dragItem.current = null;
   };
 
-  // --- Tanlash va boshqalar
+  // Tanlash va zakaz qismi o‘zgarmaydi
   const handleSelect = (itemId) => {
     setSelected(sel => {
       const exists = sel.find(s => s.itemId === itemId);
@@ -56,11 +72,11 @@ export default function MenuPanel({
   }).filter(Boolean);
 
   const total = selectedItems.reduce((sum, s) => sum + (s.price * s.quantity), 0);
-const displayItems = items.filter(i => i.remain > 0);
+
   return (
     <div style={{
       width: 430, minWidth: 260, maxWidth: 500, background: "#232355",
-      borderRadius: 28, padding: "28px 24px 90px 24px", // bottom padding ko‘paydi!
+      borderRadius: 28, padding: "28px 24px 90px 24px",
       display: "flex", flexDirection: "column", position: "relative",
       alignItems: "center"
     }}>
@@ -106,7 +122,7 @@ const displayItems = items.filter(i => i.remain > 0);
       {/* --- Zakaz panel (fixed to bottom) --- */}
       {selectedItems.length > 0 && (
         <div style={{
-          position: "absolute", bottom: 18, left: 24, right: 24, // Yopishtirildi
+          position: "absolute", bottom: 18, left: 24, right: 24,
           background: "#252a54", borderRadius: 18, padding: 22,
           minWidth: 250, maxWidth: 340, margin: "auto",
           boxShadow: "0 2px 18px #0002",
@@ -134,7 +150,6 @@ const displayItems = items.filter(i => i.remain > 0);
                     background: "#343562", color: "#fff", border: "none", width: 20, height: 20,
                     borderRadius: "50%", cursor: "pointer", fontWeight: 700, fontSize: 16, marginLeft: 2
                   }}>+</button>
-                {/* O'chirish badge */}
                 <button onClick={e => { e.stopPropagation(); handleRemove(sel.id); }}
                   style={{
                     position: "absolute", top: -9, right: -7, background: "#ff4d6e",
