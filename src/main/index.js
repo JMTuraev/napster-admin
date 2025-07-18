@@ -3,6 +3,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join, basename } from 'path'
 import { copyFileSync, existsSync, mkdirSync } from 'fs'
 import { registerBarHandlers } from './barHandler.js'
+import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js' // <-- YANGI QATOR
 // Electron Toolkit
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
@@ -12,7 +13,7 @@ import { initBarTable } from '../database/barService.js'
 import { db } from '../database/db.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
-import { initUserTable } from '../database/userService.js' // <<< YANGI
+import { initUserTable } from '../database/userService.js'
 
 // HANDLERLAR
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
@@ -31,10 +32,9 @@ function createWindow() {
     kiosk: false,
     alwaysOnTop: false,
     frame: true,
-    title: "Game Booking",     
+    title: "Game Booking",
     fullscreen: false,
     closable: true,
-    
     autoHideMenuBar: true,
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
@@ -70,14 +70,12 @@ app.whenReady().then(() => {
   app.on('browser-window-created', (_, window) => optimizer.watchWindowShortcuts(window))
 
   // ==== JADVAL YARATISH ====
-  initUserTable() // <--- users jadvali YARATISH
-  initBarTable() // <--- bars jadvali YARATISH
-  registerBarHandlers()
+  initUserTable()
+  initBarTable()
   initLevelsAndTabsAndGames()
   initTimerTable()
 
   // ==== IPC HANDLERS ====
-  // Signal test
   ipcMain.on('ping', () => console.log('pong'))
 
   // Foydalanuvchi qo‘shish va olish
@@ -101,13 +99,11 @@ app.whenReady().then(() => {
     db.prepare('SELECT * FROM users ORDER BY number ASC').all()
   )
 
-
-
   // ==== MODULLAR IPC HANDLARLARNI ULASH ====
-  
-  
+  registerBarHandlers()
   registerLevelPriceHandlers()
   registerTimerHandlers(io)
+  registerGoodsReceiptHandlers() // <-- YANGI QATOR
 
   // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
