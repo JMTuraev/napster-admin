@@ -1,6 +1,6 @@
 import { db } from './db.js'
 
-// 1. Jadval yaratish (buy_price ham bor!)
+// 1. Jadval yaratish (buy_price, remain kiritildi)
 export function initBarTable() {
   db.prepare(`
     CREATE TABLE IF NOT EXISTS bar_items (
@@ -8,7 +8,7 @@ export function initBarTable() {
       name TEXT NOT NULL,
       image TEXT,
       sell_price INTEGER DEFAULT 0,
-      buy_price INTEGER DEFAULT 0,     -- yangi ustun!
+      buy_price INTEGER DEFAULT 0,
       remain INTEGER DEFAULT 0,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     );
@@ -27,7 +27,7 @@ export function addBarItem({ name, image, sell_price = 0, buy_price = 0, remain 
   ).run(name, image, sell_price, buy_price, remain)
 }
 
-// 4. Tahrirlash (hammasi optional)
+// 4. Tahrirlash
 export function updateBarItem({ id, name, image, sell_price, buy_price, remain }) {
   return db.prepare(
     'UPDATE bar_items SET name=?, image=?, sell_price=?, buy_price=?, remain=? WHERE id=?'

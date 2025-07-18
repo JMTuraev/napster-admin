@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react'
 import GoodsReceiptForm from './GoodsReceiptForm'
-import GoodsReceiptList from './GoodsReceiptList' // import child
+import GoodsReceiptList from './GoodsReceiptList'
+import ReceiptDetailModal from './ReceiptDetailModal' // yangi component kerak bo‘ladi
 
 export default function GoodsReceiptTab() {
   const [showForm, setShowForm] = useState(false)
   const [products, setProducts] = useState([])
+  const [selectedReceipt, setSelectedReceipt] = useState(null)
 
   // Mahsulotlarni olish
   useEffect(() => {
@@ -29,6 +31,8 @@ export default function GoodsReceiptTab() {
 
   const handleShowForm = () => setShowForm(true)
   const handleCloseForm = () => setShowForm(false)
+  const handleSelectReceipt = (receipt) => setSelectedReceipt(receipt)
+  const handleCloseModal = () => setSelectedReceipt(null)
 
   return (
     <div style={{
@@ -59,7 +63,15 @@ export default function GoodsReceiptTab() {
       {showForm ? (
         <GoodsReceiptForm onClose={handleCloseForm} products={products} />
       ) : (
-        <GoodsReceiptList />
+        <GoodsReceiptList onSelect={handleSelectReceipt} />
+      )}
+
+      {/* Modal */}
+      {selectedReceipt && (
+        <ReceiptDetailModal
+          receipt={selectedReceipt}
+          onClose={handleCloseModal}
+        />
       )}
     </div>
   )

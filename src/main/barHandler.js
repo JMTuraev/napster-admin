@@ -11,7 +11,6 @@ import {
   getBarItemById
 } from '../database/barService.js'
 
-// Bar productlar uchun IPC handlerlar
 export function registerBarHandlers() {
   // 1. Barcha mahsulotlar
   ipcMain.handle('bar-items/get', () => getAllBarItems())
@@ -25,27 +24,14 @@ export function registerBarHandlers() {
   // 4. O‘chirish
   ipcMain.handle('bar-items/delete', (event, id) => deleteBarItem(id))
 
-  // 5. Faqat buy_price va remain ni yangilash (приходda foydalanish uchun)
+  // 5. Faqat buy_price va remain ni yangilash (приход uchun)
   ipcMain.handle('bar-items/update-buy-remain', (event, { id, buy_price, qty }) => {
-    // Oldingi remain-ni olish va yangilash
     const item = getBarItemById(id)
     const newRemain = (item?.remain ?? 0) + (Number(qty) ?? 0)
     return updateBuyPriceAndRemain({ id, buy_price: Number(buy_price), remain: newRemain })
   })
 
-  // 6. Приход batch qo‘shish (ko‘p mahsulot bir vaqtning o‘zida)
-  ipcMain.handle('goods-receipt/add', async (event, { items }) => {
-    for (const item of items) {
-      // Har bir product uchun buy_price va remain-ni yangilash
-      const { product_id, qty, buy_price } = item
-      const existing = getBarItemById(product_id)
-      const newRemain = (existing?.remain ?? 0) + (qty ?? 0)
-      updateBuyPriceAndRemain({ id: product_id, buy_price, remain: newRemain })
-    }
-    return { ok: true }
-  })
-
-  // 7. Rasm yuklash (base64)
+  // 6. Rasmni base64 dan images papkaga saqlash va path qaytarish (always required!)
   ipcMain.handle('copyImageFile', async (event, fileObj) => {
     try {
       if (!fileObj || !fileObj.base64) return ''

@@ -1,21 +1,21 @@
-// Electron asosiy modullari
+// src/main/index.js
+
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join, basename } from 'path'
-import { copyFileSync, existsSync, mkdirSync } from 'fs'
-import { registerBarHandlers } from './barHandler.js'
-import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js' // <-- YANGI QATOR
-// Electron Toolkit
+import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
-import { initBarTable } from '../database/barService.js'
 
-// DATABASE va SERVICE
+// DATABASE va SERVICE INIT
 import { db } from '../database/db.js'
+import { initBarTable } from '../database/barService.js'
+import { initReceiptsTables } from '../database/goodsReceiptService.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
 
-// HANDLERLAR
+// HANDLER IMPORTS
+import { registerBarHandlers } from './barHandler.js'
+import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js'
 
@@ -72,13 +72,13 @@ app.whenReady().then(() => {
   // ==== JADVAL YARATISH ====
   initUserTable()
   initBarTable()
+  initReceiptsTables()     // <-- PRIXOD/RECEIPTS JADVALLARINI YARATISH
   initLevelsAndTabsAndGames()
   initTimerTable()
 
-  // ==== IPC HANDLERS ====
+  // ==== IPC HANDLERS (core system) ====
   ipcMain.on('ping', () => console.log('pong'))
 
-  // Foydalanuvchi qo‘shish va olish
   ipcMain.handle('add-user', (event, user) => {
     const now = new Date().toISOString()
     const exists = db.prepare('SELECT * FROM users WHERE mac = ?').get(user.mac)
@@ -99,11 +99,11 @@ app.whenReady().then(() => {
     db.prepare('SELECT * FROM users ORDER BY number ASC').all()
   )
 
-  // ==== MODULLAR IPC HANDLARLARNI ULASH ====
+  // ==== MODULLAR IPC HANDLERLARNI ULASH ====
   registerBarHandlers()
+  registerGoodsReceiptHandlers() // <-- PRIXOD HANDLERLARI
   registerLevelPriceHandlers()
   registerTimerHandlers(io)
-  registerGoodsReceiptHandlers() // <-- YANGI QATOR
 
   // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
