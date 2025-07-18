@@ -1,15 +1,16 @@
 import React, { useState } from 'react'
 import BarProductsTab from './BarProductsTab'
-// Boshqa tablar ham yoziladi (tashlab ketilganlar uchun stub):
+import GoodsReceiptTab from './GoodsReceiptTab'
 // import BarOrdersTab from './BarOrdersTab'
 // import BarHistoryTab from './BarHistoryTab'
 // import BarStatsTab from './BarStatsTab'
 
 const TABS = [
-  { key: 'orders', label: 'Заказы' },     // Zakazi
-  { key: 'products', label: 'Товары' },   // Tovari
-  { key: 'history', label: 'История' },   // Istoriya
-  { key: 'stats', label: 'Статистика' }   // Statistika
+  { key: 'orders', label: 'Заказы' },           // Zakazi
+  { key: 'products', label: 'Товары' },         // Tovari
+  { key: 'goods-receipt', label: 'Приход' },    // Goods Receipt
+  { key: 'history', label: 'История' },         // Istoriya
+  { key: 'stats', label: 'Статистика' }         // Statistika
 ]
 
 export default function Bar() {
@@ -19,7 +20,9 @@ export default function Bar() {
     <div style={{ width: '100%', minHeight: '100vh' }}>
       {/* Tabs */}
       <div style={{
-        display: 'flex', gap: 12, padding: '32px 0 18px 36px',
+        display: 'flex',
+        gap: 12,
+        padding: '32px 0 18px 36px',
         background: 'transparent'
       }}>
         {TABS.map(tab => (
@@ -47,6 +50,7 @@ export default function Bar() {
       {/* Tab Content */}
       <div>
         {activeTab === 'products' && <BarProductsTab />}
+        {activeTab === 'goods-receipt' && <GoodsReceiptTab />}
         {/* {activeTab === 'orders' && <BarOrdersTab />} */}
         {/* {activeTab === 'history' && <BarHistoryTab />} */}
         {/* {activeTab === 'stats' && <BarStatsTab />} */}

@@ -1,14 +1,16 @@
 import React, { useState } from 'react'
 import BarProductsTab from './BarProductsTab'
-// import BarOrdersTab from './BarOrdersTab' // Keyinchalik yoziladi
+import GoodsReceiptTab from './GoodsReceiptTab'
+// import BarOrdersTab from './BarOrdersTab'
 // import BarHistoryTab from './BarHistoryTab'
 // import BarStatsTab from './BarStatsTab'
 
 const TABS = [
   { key: 'orders', label: 'Заказы' },
   { key: 'products', label: 'Товары' },
+  { key: 'goods-receipt', label: 'Приход' },      // Ingilizchada: Goods Receipt
   { key: 'history', label: 'История' },
-  { key: 'stats', label: 'Статистика' },
+  { key: 'stats', label: 'Статистика' }
 ]
 
 export default function BarTabs() {
@@ -16,6 +18,7 @@ export default function BarTabs() {
 
   return (
     <div>
+      {/* Tabs Navigation */}
       <div style={{ display: 'flex', gap: 8, marginTop: 24, marginBottom: 32 }}>
         {TABS.map(tab => (
           <button
@@ -30,14 +33,16 @@ export default function BarTabs() {
               fontWeight: 600,
               fontSize: 18,
               boxShadow: activeTab === tab.key ? '0 2px 12px #1244ff33' : undefined,
-              cursor: 'pointer',
+              cursor: activeTab === tab.key ? 'default' : 'pointer',
               transition: 'background 0.2s'
             }}
+            disabled={activeTab === tab.key}
           >
             {tab.label}
           </button>
         ))}
       </div>
+      {/* Tab Contents */}
       <div>
         {activeTab === 'orders' && (
           <div style={{
@@ -50,6 +55,9 @@ export default function BarTabs() {
         )}
         {activeTab === 'products' && (
           <BarProductsTab />
+        )}
+        {activeTab === 'goods-receipt' && (
+          <GoodsReceiptTab />
         )}
         {activeTab === 'history' && (
           <div style={{

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import ProductCreateForm from './ProductCreateForm'
 import ProductEditForm from './ProductEditForm'
 import ProductCard from './ProductCard'
+import GoodsReceiptTab from './GoodsReceiptTab'
 
 const CARD_MIN_WIDTH = 200
 const GAP = 20
