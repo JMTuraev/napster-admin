@@ -2,22 +2,19 @@
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join, basename } from 'path'
 import { copyFileSync, existsSync, mkdirSync } from 'fs'
-
+import { registerBarHandlers } from './barHandler.js'
 // Electron Toolkit
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { initBarTable } from '../database/barService.js'
 
 // DATABASE va SERVICE
 import { db } from '../database/db.js'
-import { initBarTable } from '../database/barService.js'
-import { initOrderTable } from '../database/orderService.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js' // <<< YANGI
 
 // HANDLERLAR
-import { registerBarHandlers } from './barHandlers.js'
-import { registerOrderHandlers } from './orderHandlers.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js'
 
@@ -74,8 +71,8 @@ app.whenReady().then(() => {
 
   // ==== JADVAL YARATISH ====
   initUserTable() // <--- users jadvali YARATISH
-  initBarTable()
-  initOrderTable()
+  initBarTable() // <--- bars jadvali YARATISH
+  registerBarHandlers()
   initLevelsAndTabsAndGames()
   initTimerTable()
 
@@ -104,25 +101,11 @@ app.whenReady().then(() => {
     db.prepare('SELECT * FROM users ORDER BY number ASC').all()
   )
 
-  // ==== YANGI: IMAGE COPY IPC HANDLER ====
-  ipcMain.handle('copyImageFile', (event, srcPath) => {
-    try {
-      if (!srcPath) return ''
-      const fileName = Date.now() + '_' + basename(srcPath)
-      const destDir = join(process.cwd(), 'src', 'renderer', 'public', 'images')
-      if (!existsSync(destDir)) mkdirSync(destDir, { recursive: true })
-      const destPath = join(destDir, fileName)
-      copyFileSync(srcPath, destPath)
-      return '/images/' + fileName // Front uchun public path
-    } catch (e) {
-      console.error('[copyImageFile]', e)
-      return ''
-    }
-  })
+
 
   // ==== MODULLAR IPC HANDLARLARNI ULASH ====
-  registerBarHandlers()
-  registerOrderHandlers()
+  
+  
   registerLevelPriceHandlers()
   registerTimerHandlers(io)
 

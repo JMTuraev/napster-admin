@@ -74,10 +74,10 @@ const api = {
   getMac: getMacAddress,
   getGameIcon: getGameIconForUI,
   deleteGameIcon: deleteGameIconForUI,
-  // **IPC invoke universal**: Bar va Order uchun:
+  // IPC invoke universal: Bar va Order uchun
   invoke: (...args) => ipcRenderer.invoke(...args),
-  // Rasm yuklash uchun (optional)
-  copyImageFile: (srcPath) => ipcRenderer.invoke('copyImageFile', srcPath)
+  // Rasm yuklash uchun (DB ga path yozish)
+   copyImageFile: (fileObj) => ipcRenderer.invoke('copyImageFile', fileObj)
 }
 
 // Expose to window.api
