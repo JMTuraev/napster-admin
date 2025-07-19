@@ -39,9 +39,12 @@ export default function App() {
     }
   }
 
-  // Yuborgan ko‘k rang (#347CFF)
   const activeBg = "#347CFF"
   const activeShadow = "0 2px 18px 0 #347cff66, 0 0px 0 2px #347cff33"
+
+  // Responsive padding/margin
+  const SIDE_PADDING = 40   // px
+  const TOP_MARGIN = 14     // px
 
   return (
     <div
@@ -56,13 +59,13 @@ export default function App() {
       <div
         style={{
           position: 'fixed',
-          top: 0,
+          top: TOP_MARGIN,
           left: 0,
           width: '100vw',
           zIndex: 99,
           background: 'transparent',
           display: 'flex',
-          justifyContent: 'center',
+          justifyContent: 'flex-start',
           padding: 0,
           pointerEvents: 'none',
           userSelect: 'none',
@@ -72,7 +75,7 @@ export default function App() {
           style={{
             display: 'flex',
             gap: '14px',
-            padding: '13px 0',
+            padding: `13px ${SIDE_PADDING}px 13px ${SIDE_PADDING}px`,
             pointerEvents: 'auto'
           }}
         >
@@ -130,7 +133,6 @@ export default function App() {
                   {icon}
                 </span>
                 <span>{label}</span>
-                {/* underline olib tashlandi */}
               </button>
             )
           })}
@@ -140,11 +142,9 @@ export default function App() {
       {/* Main content */}
       <div
         style={{
-          marginTop: '70px',
-          maxWidth: 1060,
-          marginLeft: 'auto',
-          marginRight: 'auto',
-          padding: '0 18px',
+          marginTop: `${70 + TOP_MARGIN}px`, // navbardagi top margin + nav height
+          width: '100%',
+          padding: `0 ${SIDE_PADDING}px`,
         }}
       >
         {renderPage()}

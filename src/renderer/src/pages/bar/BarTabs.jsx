@@ -1,14 +1,12 @@
 import React, { useState } from 'react'
 import BarProductsTab from './BarProductsTab'
 import GoodsReceiptTab from './GoodsReceiptTab'
-// import BarOrdersTab from './BarOrdersTab'
-// import BarHistoryTab from './BarHistoryTab'
-// import BarStatsTab from './BarStatsTab'
+import BarOrdersTab from './BarOrdersTab' // <-- Endi import qilindi
 
 const TABS = [
   { key: 'orders', label: 'Заказы' },
   { key: 'products', label: 'Товары' },
-  { key: 'goods-receipt', label: 'Приход' },      // Ingilizchada: Goods Receipt
+  { key: 'goods-receipt', label: 'Приход' },
   { key: 'history', label: 'История' },
   { key: 'stats', label: 'Статистика' }
 ]
@@ -45,13 +43,7 @@ export default function BarTabs() {
       {/* Tab Contents */}
       <div>
         {activeTab === 'orders' && (
-          <div style={{
-            minHeight: 180, borderRadius: 14, background: '#22243b', color: '#eee',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 500
-          }}>
-            {/* Zakazlar ro‘yxati (keyinchalik BarOrdersTab joylanadi) */}
-            Заказов пока нет.
-          </div>
+          <BarOrdersTab />   {/* Zakazlar ro‘yxati va menyu to‘liq chiqadi */}
         )}
         {activeTab === 'products' && (
           <BarProductsTab />

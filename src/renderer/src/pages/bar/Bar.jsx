@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import BarProductsTab from './BarProductsTab'
 import GoodsReceiptTab from './GoodsReceiptTab'
-// import BarOrdersTab from './BarOrdersTab'
+import BarOrdersTab from './BarOrdersTab'
 // import BarHistoryTab from './BarHistoryTab'
 // import BarStatsTab from './BarStatsTab'
 
@@ -49,9 +49,9 @@ export default function Bar() {
       </div>
       {/* Tab Content */}
       <div>
+        {activeTab === 'orders' && <BarOrdersTab />}
         {activeTab === 'products' && <BarProductsTab />}
         {activeTab === 'goods-receipt' && <GoodsReceiptTab />}
-        {/* {activeTab === 'orders' && <BarOrdersTab />} */}
         {/* {activeTab === 'history' && <BarHistoryTab />} */}
         {/* {activeTab === 'stats' && <BarStatsTab />} */}
       </div>
