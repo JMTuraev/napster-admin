@@ -4,34 +4,44 @@ import { join } from 'path'
 import { writeFileSync, existsSync, mkdirSync } from 'fs'
 import {
   getAllBarItems,
+  getBarItemsByTab,          // yangi method, kerak bo‘lsa
   addBarItem,
   updateBarItem,
+  updateBarItemOrder,       // yangi: drag&drop uchun sort/tabni yangilash
   deleteBarItem,
   updateBuyPriceAndRemain,
   getBarItemById
 } from '../database/barService.js'
 
 export function registerBarHandlers() {
-  // 1. Barcha mahsulotlar
+  // 1. Barcha mahsulotlar (hammasi)
   ipcMain.handle('bar-items/get', () => getAllBarItems())
 
-  // 2. Qo'shish
+  // 2. Faqat bitta tab mahsulotlari (optional, kerak bo‘lsa)
+  ipcMain.handle('bar-items/get-by-tab', (event, tab_id) => getBarItemsByTab(tab_id))
+
+  // 3. Qo'shish
   ipcMain.handle('bar-items/add', (event, data) => addBarItem(data))
 
-  // 3. Tahrirlash
+  // 4. Tahrirlash
   ipcMain.handle('bar-items/update', (event, data) => updateBarItem(data))
 
-  // 4. O‘chirish
+  // 5. Drag & drop: faqat tartib va tab ni yangilash (sort, tab change)
+  ipcMain.handle('bar-items/update-order', (event, { id, tab_id, sort_order }) =>
+    updateBarItemOrder({ id, tab_id, sort_order })
+  )
+
+  // 6. O‘chirish
   ipcMain.handle('bar-items/delete', (event, id) => deleteBarItem(id))
 
-  // 5. Faqat buy_price va remain ni yangilash (приход uchun)
+  // 7. Faqat buy_price va remain ni yangilash (приход uchun)
   ipcMain.handle('bar-items/update-buy-remain', (event, { id, buy_price, qty }) => {
     const item = getBarItemById(id)
     const newRemain = (item?.remain ?? 0) + (Number(qty) ?? 0)
     return updateBuyPriceAndRemain({ id, buy_price: Number(buy_price), remain: newRemain })
   })
 
-  // 6. Rasmni base64 dan images papkaga saqlash va path qaytarish (always required!)
+  // 8. Rasmni base64 dan images papkaga saqlash va path qaytarish (always required!)
   ipcMain.handle('copyImageFile', async (event, fileObj) => {
     try {
       if (!fileObj || !fileObj.base64) return ''

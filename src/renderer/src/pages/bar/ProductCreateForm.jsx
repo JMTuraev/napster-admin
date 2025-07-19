@@ -48,7 +48,7 @@ export default function ProductCreateForm({ onAdd, existingNames }) {
           base64,
         })
       }
-      await onAdd({ name: trimmedName, image: imagePath })
+      await onAdd({ name: trimmedName, image: imagePath, tab_id:1 })
       setName('')
       setImageFile(null)
       setImagePreview('')

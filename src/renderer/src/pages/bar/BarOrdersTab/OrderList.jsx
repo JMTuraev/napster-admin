@@ -1,6 +1,5 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
-// orderCardStyle universal card uchun
 const orderCardStyle = {
   background: '#181926',
   borderRadius: 9,
@@ -14,7 +13,7 @@ const orderCardStyle = {
   gap: 12
 }
 
-// Scrollbar uchun style - har doim project global style'iga joylang
+// Scrollbar style (1-marta append bo‘ladi)
 const customScrollbarStyle = `
 .orders-list-scroll {
   scrollbar-width: thin;
@@ -33,9 +32,12 @@ const customScrollbarStyle = `
 }
 `;
 
-export default function OrdersList({ orders = [], cartCard = null }) {
-  // Scrollbar stilini bir marta DOM'ga qo'shamiz
-  React.useEffect(() => {
+export default function OrdersList({ cartCard = null }) {
+  const [orders, setOrders] = useState([])
+  const [loading, setLoading] = useState(true)
+
+  // Scrollbar style faqat 1-marta append qilinadi
+  useEffect(() => {
     if (!document.getElementById('orders-scrollbar-style')) {
       const style = document.createElement('style')
       style.id = 'orders-scrollbar-style'
@@ -43,6 +45,22 @@ export default function OrdersList({ orders = [], cartCard = null }) {
       document.head.appendChild(style)
     }
   }, [])
+
+  // Orders ni serverdan (IPC orqali) olish
+  const fetchOrders = async () => {
+    setLoading(true)
+    const res = await window.api.invoke('orders/list') // <-- handler ochilgan bo‘lishi kerak!
+    setOrders(res.orders || [])
+    setLoading(false)
+  }
+
+  useEffect(() => { fetchOrders() }, [])
+
+  // Status yangilash
+  const handleStatus = async (orderId, status) => {
+    await window.api.invoke('orders/update-status', { orderId, status })
+    fetchOrders()
+  }
 
   return (
     <div
@@ -77,19 +95,20 @@ export default function OrdersList({ orders = [], cartCard = null }) {
           flexDirection: 'column',
           gap: 16,
           paddingRight: 0,
-          paddingBottom: 100, // <-- 24 + 30px, pastdan joy uchun
+          paddingBottom: 100,
         }}
       >
-        {(!orders || !orders.length) ? (
+        {loading ? (
+          <div style={{ color: '#7ed0fa', fontSize: 16, padding: 20, textAlign: 'center' }}>
+            YUKLANMOQDA...
+          </div>
+        ) : !orders.length ? (
           <div style={{ color: '#9cb2ca', fontSize: 15, padding: 20, textAlign: 'center' }}>
             Buyurtmalar hali yo‘q
           </div>
         ) : (
           orders.map(order => (
-            <div
-              key={order.id}
-              style={orderCardStyle}
-            >
+            <div key={order.id} style={orderCardStyle}>
               <div style={{
                 display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6
               }}>
@@ -157,12 +176,14 @@ export default function OrdersList({ orders = [], cartCard = null }) {
                       background: '#1ecc8c', color: '#14232d', border: 'none', borderRadius: 7,
                       padding: '6px 20px', fontWeight: 700, fontSize: 15, cursor: 'pointer'
                     }}
+                    onClick={() => handleStatus(order.id, 'оплачен')}
                   >Оплачен</button>
                   <button
                     style={{
                       background: '#ff6f6f', color: '#fff', border: 'none', borderRadius: 7,
                       padding: '6px 20px', fontWeight: 700, fontSize: 15, cursor: 'pointer'
                     }}
+                    onClick={() => handleStatus(order.id, 'отказ')}
                   >Отказ</button>
                 </div>
               )}

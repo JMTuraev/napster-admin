@@ -12,13 +12,15 @@ import { initReceiptsTables } from '../database/goodsReceiptService.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
+import { initTabsMenuTable } from '../database/tabsMenuService.js'   // <-- Yangi
 
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
 import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js'
-
+import { registerTabsMenuHandlers } from './tabsMenuHandler.js'      // <-- Yangi
+import { registerOrdersHandlers } from './ordersHandler.js'
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
@@ -72,10 +74,11 @@ app.whenReady().then(() => {
   // ==== JADVAL YARATISH ====
   initUserTable()
   initBarTable()
-  initReceiptsTables()     // <-- PRIXOD/RECEIPTS JADVALLARINI YARATISH
+  initReceiptsTables()
   initLevelsAndTabsAndGames()
   initTimerTable()
-
+  initTabsMenuTable()         // <-- TabsMenu jadvalini ham yaratish
+  registerOrdersHandlers()
   // ==== IPC HANDLERS (core system) ====
   ipcMain.on('ping', () => console.log('pong'))
 
@@ -101,10 +104,11 @@ app.whenReady().then(() => {
 
   // ==== MODULLAR IPC HANDLERLARNI ULASH ====
   registerBarHandlers()
-  registerGoodsReceiptHandlers() // <-- PRIXOD HANDLERLARI
+  registerGoodsReceiptHandlers()
   registerLevelPriceHandlers()
   registerTimerHandlers(io)
-
+  registerTabsMenuHandlers()            // <-- TabsMenu IPC
+  
   // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
   ipcMain.handle('check-path-exists', checkPathExistsHandler)
