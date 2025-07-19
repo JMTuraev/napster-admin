@@ -7,7 +7,7 @@ export default function GoodsReceiptTab() {
   const [showForm, setShowForm] = useState(false)
   const [products, setProducts] = useState([])
   const [selectedReceipt, setSelectedReceipt] = useState(null)
-
+const [refreshKey, setRefreshKey] = useState(0)
   // Mahsulotlarni olish
   useEffect(() => {
     async function fetchProducts() {
@@ -32,8 +32,10 @@ export default function GoodsReceiptTab() {
   const handleShowForm = () => setShowForm(true)
   const handleCloseForm = () => setShowForm(false)
   const handleSelectReceipt = (receipt) => setSelectedReceipt(receipt)
-  const handleCloseModal = () => setSelectedReceipt(null)
-
+ const handleCloseModal = () => {
+  setSelectedReceipt(null)
+  setRefreshKey(k => k + 1) // signal beradi
+}
   return (
     <div style={{
       margin: '0 auto', width: '100%', maxWidth: 1200,
@@ -63,7 +65,7 @@ export default function GoodsReceiptTab() {
       {showForm ? (
         <GoodsReceiptForm onClose={handleCloseForm} products={products} />
       ) : (
-        <GoodsReceiptList onSelect={handleSelectReceipt} />
+        <GoodsReceiptList onSelect={handleSelectReceipt} refresh={refreshKey} />
       )}
 
       {/* Modal */}

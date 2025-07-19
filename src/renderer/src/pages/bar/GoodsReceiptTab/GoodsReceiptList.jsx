@@ -22,7 +22,7 @@ function formatTime(str) {
   return d.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' })
 }
 
-export default function GoodsReceiptList({ onSelect }) {
+export default function GoodsReceiptList({ onSelect, refresh}) {
   const [prixods, setPrixods] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -43,7 +43,7 @@ export default function GoodsReceiptList({ onSelect }) {
     }
     fetchPrixods()
     return () => { cancelled = true }
-  }, [])
+  }, [refresh])
 
   return (
     <div
