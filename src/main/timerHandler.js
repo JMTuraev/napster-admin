@@ -17,10 +17,7 @@ import {
 export function registerTimerHandlers(io) {
   console.log('[ADMIN] TIMER HANDLERS REGISTERED')
 
-  ipcMain.handle('get-active-timers', () => {
-  
-    return getActiveTimers()
-  })
+  ipcMain.handle('get-active-timers', () => getActiveTimers())
 
   ipcMain.handle('get-latest-timer', (event, mac) => getLatestTimerByMac(mac))
 
@@ -40,27 +37,30 @@ export function registerTimerHandlers(io) {
       return { success: false, error: e.message }
     }
   })
-ipcMain.handle('stop-timer', (event, id) => {
-  try {
-    const timer = stopTimer(id)
-    console.log('[DEBUG] stop-timer uchun timer:', timer)
-    if (io && timer && timer.mac) {
-      io.emit('lock', timer.mac)
-      console.log('[SOCKET] LOCK yuborildi:', timer.mac)
-    } else {
-      console.log('[SOCKET] LOCK yuborilmadi, timer yoki mac yo‘q:', timer)
+
+  ipcMain.handle('stop-timer', (event, id) => {
+    try {
+      const timer = stopTimer(id)
+      console.log('[DEBUG] stop-timer uchun timer:', timer)
+      // STATUSGA QARAMASDAN: mac bor bo‘lsa, lock yubor!
+      if (io && timer && timer.mac) {
+        io.emit('lock', timer.mac)
+        console.log('[SOCKET] LOCK yuborildi:', timer.mac)
+      } else {
+        console.log('[SOCKET] LOCK yuborilmadi, timer yoki mac yo‘q:', timer)
+      }
+      return { success: true }
+    } catch (e) {
+      console.error('❌ Timer tugatishda xatolik:', e)
+      return { success: false, error: e.message }
     }
-    return { success: true }
-  } catch (e) {
-    console.error('❌ Timer tugatishda xatolik:', e)
-    return { success: false, error: e.message }
-  }
-})
+  })
 
   ipcMain.handle('stop-timer-by-mac', (event, mac) => {
     try {
       const latest = getLatestTimerByMac(mac)
-      if (latest?.status === 'running') {
+      // STATUSGA QARAMASDAN, timer topilsa lock yubor!
+      if (latest && latest.id) {
         stopTimer(latest.id)
         if (io && mac) {
           io.emit('lock', mac)

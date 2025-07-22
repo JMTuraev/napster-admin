@@ -12,15 +12,16 @@ import { initReceiptsTables } from '../database/goodsReceiptService.js'
 import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
-import { initTabsMenuTable } from '../database/tabsMenuService.js'   // <-- Yangi
+import { initTabsMenuTable } from '../database/tabsMenuService.js'
 
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
 import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js'
 import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js'
-import { registerTabsMenuHandlers } from './tabsMenuHandler.js'      // <-- Yangi
+import { registerTabsMenuHandlers } from './tabsMenuHandler.js'
 import { registerOrdersHandlers } from './ordersHandler.js'
+
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
@@ -77,8 +78,9 @@ app.whenReady().then(() => {
   initReceiptsTables()
   initLevelsAndTabsAndGames()
   initTimerTable()
-  initTabsMenuTable()         // <-- TabsMenu jadvalini ham yaratish
+  initTabsMenuTable()
   registerOrdersHandlers()
+
   // ==== IPC HANDLERS (core system) ====
   ipcMain.on('ping', () => console.log('pong'))
 
@@ -106,19 +108,23 @@ app.whenReady().then(() => {
   registerBarHandlers()
   registerGoodsReceiptHandlers()
   registerLevelPriceHandlers()
-  registerTimerHandlers(io)
-  registerTabsMenuHandlers()            // <-- TabsMenu IPC
+  registerTabsMenuHandlers() // <-- TabsMenu IPC
+  // Timer handlers **IO bilan chaqiriladi!**
   
-  // ==== GAMES, SOCKET va TIMER HANDLERS ====
-  ipcMain.handle('run-game', runGameHandler)
-  ipcMain.handle('check-path-exists', checkPathExistsHandler)
-
+  // ==== SOCKET SERVERNI BOSHLASH ====
   io = startSocketServer()
+  // Timer handler socket IO bilan faqat endi ro'yxatdan o'tkaziladi!
+  registerTimerHandlers(io)
+
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
     handleGameEvents(socket, io)
     handleTabsEvents(socket, io)
   })
+
+  // ==== GAMES, SOCKET va TIMER HANDLERS ====
+  ipcMain.handle('run-game', runGameHandler)
+  ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
   createWindow()
   app.on('activate', () => {
