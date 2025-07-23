@@ -6,7 +6,7 @@ import { handleUserEvents } from './userHandlers.js'
 import { handleGameEvents } from './gameHandlers.js'
 
 // Admin kompyuterining statik IP manzili (o‘zingizga moslang)
-const ADMIN_STATIC_IP = '127.0.0.1' // O‘ZINGIZNING IP-ni yozing!
+const ADMIN_STATIC_IP = '192.168.1.10' // O‘ZINGIZNING IP-ni yozing!
 
 export function startSocketServer() {
   const httpServer = createServer()

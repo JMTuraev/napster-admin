@@ -14,18 +14,40 @@ try {
 } catch {}
 
 // SOCKET (faqat kerak bo‘lsa)
-const socket = io('http://127.0.0.1:3000', {
+const socket = io('http://192.168.1.10:3000', {
   transports: ['websocket'],
   reconnection: true
 })
 
-// MAC adres olish
-function getMacAddress() {
+// --- Faqat faol Ethernet (yoki asosiy external) adapterning MAC adresini oladi ---
+function getActiveEthernetMac() {
   const nets = networkInterfaces()
+  // Avvalo: Ethernet/adabter nomi bo‘yicha prioritet
+  for (const name of Object.keys(nets)) {
+    if (!/ethernet|eth|en0|enp/i.test(name)) continue
+    for (const net of nets[name]) {
+      if (
+        net.family === 'IPv4' &&
+        !net.internal &&
+        net.mac &&
+        net.mac !== '00:00:00:00:00:00' &&
+        net.address
+      ) {
+        return net.mac.toLowerCase()
+      }
+    }
+  }
+  // Fallback: birinchi external IPv4
   for (const name of Object.keys(nets)) {
     for (const net of nets[name]) {
-      if (!net.internal && net.mac && net.mac !== '00:00:00:00:00:00' && net.family === 'IPv4') {
-        return net.mac
+      if (
+        net.family === 'IPv4' &&
+        !net.internal &&
+        net.mac &&
+        net.mac !== '00:00:00:00:00:00' &&
+        net.address
+      ) {
+        return net.mac.toLowerCase()
       }
     }
   }
@@ -71,13 +93,13 @@ const api = {
     id: () => socket.id
   },
   runGame,
-  getMac: getMacAddress,
+  getMac: getActiveEthernetMac,
   getGameIcon: getGameIconForUI,
   deleteGameIcon: deleteGameIconForUI,
   // IPC invoke universal: Bar va Order uchun
   invoke: (...args) => ipcRenderer.invoke(...args),
   // Rasm yuklash uchun (DB ga path yozish)
-   copyImageFile: (fileObj) => ipcRenderer.invoke('copyImageFile', fileObj)
+  copyImageFile: (fileObj) => ipcRenderer.invoke('copyImageFile', fileObj)
 }
 
 // Expose to window.api
