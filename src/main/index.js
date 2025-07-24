@@ -28,6 +28,7 @@ import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
 import { handleTabsEvents } from './tabsHandlers.js'
 import './statusHandlers.js'
+import { registerSettingsHandlers } from './settingsHandler.js'
 
 let io
 
@@ -116,6 +117,7 @@ app.whenReady().then(() => {
   io = startSocketServer()
   // Timer handler socket IO bilan faqat endi ro'yxatdan o'tkaziladi!
   registerTimerHandlers(io)
+  registerSettingsHandlers(io) // <-- Socket bilan chaqirilsin
 
   io.on('connection', (socket) => {
     console.log('📡 Yangi client ulandi')
