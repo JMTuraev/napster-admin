@@ -21,6 +21,7 @@ import { registerLevelPriceHandlers } from './levelPriceHandler.js'
 import { registerTimerHandlers } from './timerHandler.js'
 import { registerTabsMenuHandlers } from './tabsMenuHandler.js'
 import { registerOrdersHandlers } from './ordersHandler.js'
+import { handleUserStatusEvents } from './userStatusHandler.js'
 
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
@@ -120,6 +121,7 @@ app.whenReady().then(() => {
     console.log('📡 Yangi client ulandi')
     handleGameEvents(socket, io)
     handleTabsEvents(socket, io)
+      handleUserStatusEvents(socket, io) // <--- MUHIM!
   })
 
   // ==== GAMES, SOCKET va TIMER HANDLERS ====
