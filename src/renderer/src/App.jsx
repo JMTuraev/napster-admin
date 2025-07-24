@@ -5,7 +5,8 @@ import {
   Clock3,
   BarChart4,
   Calendar,
-  Utensils
+  Utensils,
+  Shield
 } from 'lucide-react'
 import Games from './pages/games/Games'
 import Timer from './pages/timer/Timer'
@@ -13,6 +14,7 @@ import Stats from './pages/Stats'
 import Bookings from './pages/Bookings'
 import Bar from './pages/bar/Bar'
 import Computers from './pages/Computers'
+import OwnerPasswordPanel from './pages/Owner' // Yangi komponent
 
 const NAV_ITEMS = [
   { key: 'computers', label: 'Компьютеры', icon: <Monitor size={20} /> },
@@ -21,6 +23,7 @@ const NAV_ITEMS = [
   { key: 'stats', label: 'Статистика', icon: <BarChart4 size={20} /> },
   { key: 'bookings', label: 'Бронь', icon: <Calendar size={20} /> },
   { key: 'bar', label: 'Бар', icon: <Utensils size={20} /> },
+  { key: 'owner', label: 'Владелец', icon: <Shield size={20} /> }, // Icon qo'shildi!
 ]
 
 export default function App() {
@@ -35,16 +38,15 @@ export default function App() {
       case 'stats': return <Stats />
       case 'bookings': return <Bookings />
       case 'bar': return <Bar />
+      case 'owner': return <OwnerPasswordPanel />    // Yangi case
       default: return <Games />
     }
   }
 
   const activeBg = "#347CFF"
   const activeShadow = "0 2px 18px 0 #347cff66, 0 0px 0 2px #347cff33"
-
-  // Responsive padding/margin
-  const SIDE_PADDING = 40   // px
-  const TOP_MARGIN = 14     // px
+  const SIDE_PADDING = 40
+  const TOP_MARGIN = 14
 
   return (
     <div
@@ -142,7 +144,7 @@ export default function App() {
       {/* Main content */}
       <div
         style={{
-          marginTop: `${70 + TOP_MARGIN}px`, // navbardagi top margin + nav height
+          marginTop: `${70 + TOP_MARGIN}px`,
           width: '100%',
           padding: `0 ${SIDE_PADDING}px`,
         }}
