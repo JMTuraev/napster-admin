@@ -13,7 +13,7 @@ import { initLevelsAndTabsAndGames } from '../database/gamesService.js'
 import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
 import { initTabsMenuTable } from '../database/tabsMenuService.js'
-
+import { initBackgroundTable } from '../database/backgroundService.js'
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
 import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js'
@@ -22,6 +22,7 @@ import { registerTimerHandlers } from './timerHandler.js'
 import { registerTabsMenuHandlers } from './tabsMenuHandler.js'
 import { registerOrdersHandlers } from './ordersHandler.js'
 import { handleUserStatusEvents } from './userStatusHandler.js'
+import { registerBackgroundHandlers } from './backgroundHandler.js'
 
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
@@ -31,6 +32,7 @@ import './statusHandlers.js'
 import { registerSettingsHandlers } from './settingsHandler.js'
 
 let io
+registerBackgroundHandlers(io)
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
@@ -81,7 +83,9 @@ app.whenReady().then(() => {
   initLevelsAndTabsAndGames()
   initTimerTable()
   initTabsMenuTable()
+  initBackgroundTable()
   registerOrdersHandlers()
+  
 
   // ==== IPC HANDLERS (core system) ====
   ipcMain.on('ping', () => console.log('pong'))

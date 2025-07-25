@@ -4,11 +4,16 @@
     <meta charset="UTF-8" />
     <title>Game Booking</title>
     <!-- https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP -->
-    <meta
-      http-equiv="Content-Security-Policy"
-      
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:;"
-    />
+<meta
+  http-equiv="Content-Security-Policy"
+  content="
+    default-src 'self';
+    script-src 'self';
+    style-src 'self' 'unsafe-inline';
+    img-src 'self' http://192.168.1.10:5173 http://192.168.1.10:3000 data: blob:;
+    connect-src 'self' ws://192.168.1.10:3000 http://192.168.1.10:3000 ws://localhost:3000;
+"
+/>
   </head>
 
   <body>
