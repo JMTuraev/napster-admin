@@ -1,5 +1,4 @@
 // src/main/index.js
-
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
@@ -14,6 +13,7 @@ import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
 import { initTabsMenuTable } from '../database/tabsMenuService.js'
 import { initBackgroundTable } from '../database/backgroundService.js'
+
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
 import { registerGoodsReceiptHandlers } from './goodsReceiptHandler.js'
@@ -32,14 +32,13 @@ import './statusHandlers.js'
 import { registerSettingsHandlers } from './settingsHandler.js'
 
 let io
-registerBackgroundHandlers(io)
 
 function createWindow() {
   const mainWindow = new BrowserWindow({
     kiosk: false,
     alwaysOnTop: false,
     frame: true,
-    title: "Game Booking",
+    title: 'Game Booking',
     fullscreen: false,
     closable: true,
     autoHideMenuBar: true,
@@ -85,7 +84,21 @@ app.whenReady().then(() => {
   initTabsMenuTable()
   initBackgroundTable()
   registerOrdersHandlers()
-  
+
+  // ==== SOCKET SERVERNI BOSHLASH ====
+  io = startSocketServer()
+
+  // === MODULLAR SOCKET bilan ishlaydi ===
+  registerBackgroundHandlers(io) // ✅ TO‘G‘RI joyga KO‘CHIRILDI
+  registerTimerHandlers(io)
+  registerSettingsHandlers(io)
+
+  io.on('connection', (socket) => {
+    console.log('📡 Yangi client ulandi')
+    handleGameEvents(socket, io)
+    handleTabsEvents(socket, io)
+    handleUserStatusEvents(socket, io)
+  })
 
   // ==== IPC HANDLERS (core system) ====
   ipcMain.on('ping', () => console.log('pong'))
@@ -110,27 +123,11 @@ app.whenReady().then(() => {
     db.prepare('SELECT * FROM users ORDER BY number ASC').all()
   )
 
-  // ==== MODULLAR IPC HANDLERLARNI ULASH ====
   registerBarHandlers()
   registerGoodsReceiptHandlers()
   registerLevelPriceHandlers()
-  registerTabsMenuHandlers() // <-- TabsMenu IPC
-  // Timer handlers **IO bilan chaqiriladi!**
-  
-  // ==== SOCKET SERVERNI BOSHLASH ====
-  io = startSocketServer()
-  // Timer handler socket IO bilan faqat endi ro'yxatdan o'tkaziladi!
-  registerTimerHandlers(io)
-  registerSettingsHandlers(io) // <-- Socket bilan chaqirilsin
+  registerTabsMenuHandlers()
 
-  io.on('connection', (socket) => {
-    console.log('📡 Yangi client ulandi')
-    handleGameEvents(socket, io)
-    handleTabsEvents(socket, io)
-      handleUserStatusEvents(socket, io) // <--- MUHIM!
-  })
-
-  // ==== GAMES, SOCKET va TIMER HANDLERS ====
   ipcMain.handle('run-game', runGameHandler)
   ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
