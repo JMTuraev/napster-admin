@@ -1,10 +1,15 @@
 import React from 'react'
-import { Plus, X } from 'lucide-react'
+import { Plus, X, CheckCircle } from 'lucide-react'
 
 const MAX_IMAGES = 6
 
-export default function BackgroundImageSelector({ images = [], onAdd, onRemove, selectedId, onSelect }) {
-    console.log(images)
+export default function BackgroundImageSelector({
+  images = [],
+  onAdd,
+  onRemove,
+  selectedId,
+  onSelect
+}) {
   return (
     <div style={{
       flex: 1,
@@ -29,10 +34,10 @@ export default function BackgroundImageSelector({ images = [], onAdd, onRemove, 
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)',
+        gridTemplateColumns: 'repeat(3, 1fr)', // 🔒 Faqat 3 ustun
         gap: 16,
         marginBottom: 20,
-        minHeight: 230
+        minHeight: 200
       }}>
         {images.map((img, idx) => (
           <div
@@ -40,12 +45,12 @@ export default function BackgroundImageSelector({ images = [], onAdd, onRemove, 
             onClick={() => onSelect(img.id)}
             style={{
               position: 'relative',
-              height: 100,
+              height: 90,
               borderRadius: 14,
               overflow: 'hidden',
               backgroundColor: '#0f111d',
               boxShadow: img.id === selectedId
-                ? '0 0 0 2px #4bb0fa, 0 0 12px #4bb0fa88'
+                ? '0 0 0 2px #4bb0fa, 0 0 16px #4bb0faaa'
                 : '0 0 0 1px #2a3251',
               transform: img.id === selectedId ? 'scale(1.02)' : 'scale(1)',
               transition: 'all 0.2s ease-in-out',
@@ -62,6 +67,7 @@ export default function BackgroundImageSelector({ images = [], onAdd, onRemove, 
               }}
             />
 
+            {/* ✅ Index badge */}
             <div style={{
               position: 'absolute',
               top: 6,
@@ -73,6 +79,7 @@ export default function BackgroundImageSelector({ images = [], onAdd, onRemove, 
               borderRadius: 8
             }}>{idx + 1}/{MAX_IMAGES}</div>
 
+            {/* ❌ Remove button */}
             <button
               onClick={(e) => {
                 e.stopPropagation()
@@ -92,12 +99,30 @@ export default function BackgroundImageSelector({ images = [], onAdd, onRemove, 
             >
               <X size={14} />
             </button>
+
+            {/* ✅ Check icon if selected */}
+            {img.id === selectedId && (
+              <CheckCircle
+                size={22}
+                style={{
+                  position: 'absolute',
+                  bottom: 6,
+                  right: 6,
+                  color: '#4bb0fa',
+                  backgroundColor: '#101828',
+                  borderRadius: '50%',
+                  padding: 1,
+                  boxShadow: '0 0 6px #4bb0fa'
+                }}
+              />
+            )}
           </div>
         ))}
 
+        {/* ➕ Add button */}
         {images.length < MAX_IMAGES && (
           <button onClick={onAdd} style={{
-            height: 100,
+            height: 90,
             border: '2px dashed #4bb0fa66',
             borderRadius: 14,
             background: '#1c2030',
