@@ -73,7 +73,16 @@ export function registerBackgroundHandlers(io) {
   })
 
   // 🔁 User.exe fonni so‘raganda
-  ipcMain.handle('get-selected-background', async () => {
-    return getSelectedBackground()
+ipcMain.handle('get-selected-background', () => {
+  const bg = getSelectedBackground()
+  return bg || null
+})
+
+  io.on('connection', (socket) => {
+    socket.on('get-selected-bg', () => {
+      const bg = getSelectedBackground()
+      socket.emit('selected-bg-data', bg) // ← fon rasm ma'lumotini qaytaramiz
+    })
   })
+  
 }
