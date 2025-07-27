@@ -32,6 +32,7 @@ import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './game
 import { handleTabsEvents } from './tabsHandlers.js'
 import './statusHandlers.js'
 import { registerSettingsHandlers } from './settingsHandler.js'
+import { registerSendPcNumberUiHandler } from './sendPcNumberUiHandler.js'
 
 let io
 
@@ -103,6 +104,7 @@ app.whenReady().then(() => {
     handleGameEvents(socket, io)
     handleTabsEvents(socket, io)
     handleUserStatusEvents(socket, io)
+    registerSendPcNumberUiHandler(socket, io)
   })
 
   // ==== IPC HANDLERS (core system) ====
