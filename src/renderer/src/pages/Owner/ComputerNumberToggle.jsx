@@ -2,13 +2,38 @@ import { useState, useEffect } from 'react'
 
 const SIZE_LABELS = ['XS', 'S', 'M', 'L', 'XL']
 const SIZE_VALUES = ['xs', 'sm', 'md', 'lg', 'xl']
+const SIZE_MAP = {
+  xs: 22,
+  sm: 28,
+  md: 36,
+  lg: 48,
+  xl: 60
+}
 
-export default function ComputerNumberToggle({ defaultValue = true, onChange }) {
-  const [enabled, setEnabled] = useState(defaultValue)
-  const [sizeIndex, setSizeIndex] = useState(2) // default = 'md'
+export default function ComputerNumberToggle() {
+  const [enabled, setEnabled] = useState(true)
+  const [sizeIndex, setSizeIndex] = useState(2) // default = md
 
+  // 🔄 1. Sozlamalarni bazadan olish
   useEffect(() => {
-    onChange?.(enabled, SIZE_VALUES[sizeIndex])
+    window.api.invoke('get-pc-number-ui-settings').then((data) => {
+      if (data) {
+        setEnabled(!!data.show_number)
+
+        const foundIndex = Object.values(SIZE_MAP).indexOf(data.font_size)
+        setSizeIndex(foundIndex !== -1 ? foundIndex : 2)
+      }
+    })
+  }, [])
+
+  // 💾 2. Har o‘zgarishda IPC orqali yangilash
+  useEffect(() => {
+    const payload = {
+      show_number: enabled,
+      font_size: SIZE_MAP[SIZE_VALUES[sizeIndex]]
+    }
+
+    window.api.invoke('update-pc-number-ui-settings', payload)
   }, [enabled, sizeIndex])
 
   return (
@@ -36,7 +61,7 @@ export default function ComputerNumberToggle({ defaultValue = true, onChange }) 
         Комната клиента
       </div>
 
-      {/* 🔘 Checkbox toggle */}
+      {/* 🔘 Toggle */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
         <span style={{ color: '#c4ceef', fontSize: 15 }}>Показывать номер ПК</span>
         <label style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', cursor: 'pointer' }}>
@@ -66,7 +91,7 @@ export default function ComputerNumberToggle({ defaultValue = true, onChange }) 
         </label>
       </div>
 
-      {/* 📏 Range Slider */}
+      {/* 📏 Slider */}
       <label style={{
         color: '#c4ceef',
         fontWeight: 500,
@@ -94,7 +119,6 @@ export default function ComputerNumberToggle({ defaultValue = true, onChange }) 
         }}
       />
 
-      {/* ✅ Size Label */}
       <div style={{
         textAlign: 'center',
         fontSize: 13,

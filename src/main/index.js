@@ -13,6 +13,7 @@ import { initTimerTable } from '../database/timer.js'
 import { initUserTable } from '../database/userService.js'
 import { initTabsMenuTable } from '../database/tabsMenuService.js'
 import { initBackgroundTable } from '../database/backgroundService.js'
+import { initPcNumberUiTable } from '../database/pcNumberUiService.js'
 
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
@@ -23,6 +24,7 @@ import { registerTabsMenuHandlers } from './tabsMenuHandler.js'
 import { registerOrdersHandlers } from './ordersHandler.js'
 import { handleUserStatusEvents } from './userStatusHandler.js'
 import { registerBackgroundHandlers } from './backgroundHandler.js'
+import { registerPcNumberUiHandlers } from './pcNumberUiHandler.js'
 
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
@@ -84,6 +86,9 @@ app.whenReady().then(() => {
   initTabsMenuTable()
   initBackgroundTable()
   registerOrdersHandlers()
+  initPcNumberUiTable()
+  registerPcNumberUiHandlers()
+
 
   // ==== SOCKET SERVERNI BOSHLASH ====
   io = startSocketServer()
