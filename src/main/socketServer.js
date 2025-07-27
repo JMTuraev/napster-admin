@@ -3,6 +3,7 @@ import { Server } from 'socket.io'
 import { handleUserEvents } from './userHandlers.js'
 import { handleGameEvents } from './gameHandlers.js'
 import { getOwnerPassword } from '../database/settingsService.js' // ⬅️ Parolni olish
+import { registerSendNumberPcHandler } from './sendNumberHandler.js'
 
 const ADMIN_STATIC_IP = '192.168.1.10'
 
@@ -26,7 +27,7 @@ export function startSocketServer() {
     // 🔧 Oldingi handlerlar
     handleUserEvents(socket, io)
     handleGameEvents(socket, io)
-
+    registerSendNumberPcHandler(socket, io)
     // 🆕 Parolni tekshirish
     socket.on('check-owner-password', async ({ password }, callback) => {
       try {
