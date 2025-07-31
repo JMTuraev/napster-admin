@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import OwnerPasswordPanel from './OwnerPasswordPanel'
 import BackgroundImageSelector from './BackgroundImageSelector'
-import ComputerNumberToggle from './ComputerNumberToggle' // ✅ qo‘shildi
+import ComputerNumberToggle from './ComputerNumberToggle'
+import UpdateUserCard from './UpdateUserCard' // ✅ Qo‘shamiz
 
 export default function Owner() {
   const [images, setImages] = useState([])
@@ -48,37 +49,47 @@ export default function Owner() {
   }
 
   return (
-    <div
-      style={{
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 16,
+      padding: 12,
+      justifyContent: 'flex-start'
+    }}>
+      <div style={{
         display: 'flex',
         flexWrap: 'wrap',
         gap: 6,
-        padding: 6,
         justifyContent: 'flex-start'
-      }}
-    >
-      {/* 1. Parol panel */}
-      <div style={{ width: 300 }}>
-        <OwnerPasswordPanel />
+      }}>
+        {/* 1. Parol panel */}
+        <div style={{ width: 300 }}>
+          <OwnerPasswordPanel />
+        </div>
+
+        {/* 2. Kompyuter raqami toggle */}
+        <div style={{ width: 200 }}>
+          <ComputerNumberToggle onChange={handleComputerNumberToggle} />
+        </div>
+
+        {/* 3. Rasm tanlovchi */}
+        <div style={{ flex: 1, minWidth: 480 }}>
+          <BackgroundImageSelector
+            images={images.map((i) => ({
+              id: i.file_name,
+              url: i.url
+            }))}
+            onAdd={handleAdd}
+            onRemove={handleRemove}
+            selectedId={selected}
+            onSelect={handleSelect}
+          />
+        </div>
       </div>
 
-      {/* 2. Kompyuter raqami toggle */}
-      <div style={{ width: 200 }}>
-        <ComputerNumberToggle onChange={handleComputerNumberToggle} />
-      </div>
-
-      {/* 3. Rasm tanlovchi */}
-      <div style={{ flex: 1, minWidth: 480 }}>
-        <BackgroundImageSelector
-          images={images.map((i) => ({
-            id: i.file_name,
-            url: i.url
-          }))}
-          onAdd={handleAdd}
-          onRemove={handleRemove}
-          selectedId={selected}
-          onSelect={handleSelect}
-        />
+      {/* === YANGI ROW: User update kartochkasi === */}
+      <div>
+        <UpdateUserCard />
       </div>
     </div>
   )

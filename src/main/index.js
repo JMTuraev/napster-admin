@@ -1,8 +1,9 @@
 // src/main/index.js
 import { app, shell, BrowserWindow, ipcMain } from 'electron'
-import { join } from 'path'
+import path, { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import fs from 'fs'
 
 // DATABASE va SERVICE INIT
 import { db } from '../database/db.js'
@@ -25,7 +26,8 @@ import { registerOrdersHandlers } from './ordersHandler.js'
 import { handleUserStatusEvents } from './userStatusHandler.js'
 import { registerBackgroundHandlers } from './backgroundHandler.js'
 import { registerPcNumberUiHandlers } from './pcNumberUiHandler.js'
-
+import { downloadUserInstaller } from './services/updateService.js'
+import { sendUserUpdate } from './socketUpdateHandler.js'
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
@@ -138,6 +140,19 @@ app.whenReady().then(() => {
   ipcMain.handle('run-game', runGameHandler)
   ipcMain.handle('check-path-exists', checkPathExistsHandler)
 
+  
+// Update fayl bor-yo‘qligini tekshirish
+ipcMain.handle('check-update-file', async () => {
+  const updatesDir = path.resolve('updates/user')
+  if (!fs.existsSync(updatesDir)) return false
+  return fs.readdirSync(updatesDir).some((f) => f.endsWith('.exe'))
+})
+
+// Userlarga update faylni socket orqali yuborish
+ipcMain.handle('send-user-update', async () => {
+  return sendUserUpdate(io)
+})
+
   createWindow()
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()
@@ -146,4 +161,17 @@ app.whenReady().then(() => {
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit()
+})
+
+
+
+
+
+ipcMain.handle('download-user-installer', async (event, { url, fileName }) => {
+  try {
+    return await downloadUserInstaller(url, fileName)
+  } catch (err) {
+    // Xatolikni frontendga qaytarish
+    throw new Error(err.message || 'Yuklashda nomaʼlum xatolik')
+  }
 })
