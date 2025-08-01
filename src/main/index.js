@@ -27,7 +27,9 @@ import { handleUserStatusEvents } from './userStatusHandler.js'
 import { registerBackgroundHandlers } from './backgroundHandler.js'
 import { registerPcNumberUiHandlers } from './pcNumberUiHandler.js'
 import { downloadUserInstaller } from './services/updateService.js'
+import { startUpdateServer  } from './services/updateServer.js' // expres update versi yuborish uchun 
 import { sendUserUpdate } from './socketUpdateHandler.js'
+
 // SOCKET va QOLGAN handlerlar
 import { startSocketServer } from './socketServer.js'
 import { runGameHandler, checkPathExistsHandler, handleGameEvents } from './gameHandlers.js'
@@ -91,7 +93,7 @@ app.whenReady().then(() => {
   registerOrdersHandlers()
   initPcNumberUiTable()
   registerPcNumberUiHandlers()
-
+  startUpdateServer()
 
   // ==== SOCKET SERVERNI BOSHLASH ====
   io = startSocketServer()

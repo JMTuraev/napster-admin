@@ -22,7 +22,7 @@ export default function UpdateUserCard() {
   setDownloading(true)
   setMessage('')
   try {
-    const url = 'https://www.python.org/ftp/python/3.13.5/python-3.13.5-amd64.exe'
+    const url = 'https://github.com/JMTuraev/downloads/releases/download/v1.0.1/napster-user-1.0.1-setup.exe'
     const fileName = 'user-setup-2.2.1.exe'
     await window.api.invoke('download-user-installer', { url, fileName })
     setMessage('✅ Yangi versiya muvaffaqiyatli yuklandi!')
@@ -36,6 +36,8 @@ export default function UpdateUserCard() {
     setDownloading(false)
   }
 }
+
+
 
 
   // Update faylni userlarga yuborish

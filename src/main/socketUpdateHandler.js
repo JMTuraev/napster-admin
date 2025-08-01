@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 
 /**
- * User update faylini barcha user.exe'ga socket orqali yuborish
+ * User update faylini barcha user.exe'ga LINK orqali yuborish
  * @param {import('socket.io').Server} io
  * @returns {object} {success, count, file, error}
  */
@@ -18,15 +18,16 @@ export function sendUserUpdate(io) {
   }
 
   const fileName = files[0]
-  const filePath = path.join(UPDATES_DIR, fileName)
-  const fileData = fs.readFileSync(filePath).toString('base64')
+  const LOCAL_SERVER_IP = '192.168.1.10' // ⚠️ IP ni o‘zingizga moslang
+  const PORT = 3010
+  const fileUrl = `http://${LOCAL_SERVER_IP}:${PORT}/updates/${encodeURIComponent(fileName)}`
 
-  // Barcha user’ga faylni jo‘natamiz
+  // 🔗 LINK YUBORILADI (fayl emas)
   io.emit('receive-update', {
     fileName,
-    fileData,
+    url: fileUrl
   })
 
-  console.log(`[SOCKET-UPDATE] 🟢 Update file sent to users: ${fileName}`)
+  console.log(`[SOCKET-UPDATE] 🟢 Update link sent to users: ${fileUrl}`)
   return { success: true, count: 'ALL', file: fileName }
 }
