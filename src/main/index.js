@@ -15,6 +15,7 @@ import { initUserTable } from '../database/userService.js'
 import { initTabsMenuTable } from '../database/tabsMenuService.js'
 import { initBackgroundTable } from '../database/backgroundService.js'
 import { initPcNumberUiTable } from '../database/pcNumberUiService.js'
+import { initSettingsTable } from '../database/settingsService.js'
 
 // HANDLER IMPORTS
 import { registerBarHandlers } from './barHandler.js'
@@ -94,6 +95,7 @@ app.whenReady().then(() => {
   initPcNumberUiTable()
   registerPcNumberUiHandlers()
   startUpdateServer()
+  initSettingsTable()
 
   // ==== SOCKET SERVERNI BOSHLASH ====
   io = startSocketServer()
