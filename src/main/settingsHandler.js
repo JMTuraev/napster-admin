@@ -2,7 +2,7 @@ import { ipcMain } from 'electron'
 import { getOwnerPassword, setOwnerPassword } from '../database/settingsService.js'
 
 export function registerSettingsHandlers(io = null) {
-  // 🔐 IPC orqali frontenddan invoke chaqiruvlar
+  // IPC handlerlar
   ipcMain.handle('get-owner-password', async () => {
     return await getOwnerPassword()
   })
@@ -10,6 +10,13 @@ export function registerSettingsHandlers(io = null) {
   ipcMain.handle('set-owner-password', async (event, pass) => {
     try {
       await setOwnerPassword(pass)
+
+      // === YANGI: Parolni socket orqali user.exe'ga yuboramiz ===
+      if (io) {
+        io.emit('update-owner-password', { password: pass })
+        console.log('📡 Parol yangilandi, user.exe ga yuborildi:', pass)
+      }
+
       return { success: true }
     } catch (err) {
       console.error('❌ Parolni saqlashda xatolik:', err)
@@ -17,7 +24,7 @@ export function registerSettingsHandlers(io = null) {
     }
   })
 
-  // 🔌 Socket.io orqali real vaqtli tekshirish
+  // Oldingi socket event
   if (io) {
     io.on('connection', (socket) => {
       socket.on('check-owner-password', async ({ password }, callback) => {
