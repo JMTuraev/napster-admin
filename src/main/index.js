@@ -38,6 +38,8 @@ import { handleTabsEvents } from './tabsHandlers.js'
 import './statusHandlers.js'
 import { registerSettingsHandlers } from './settingsHandler.js'
 import { registerSendPcNumberUiHandler } from './sendPcNumberUiHandler.js'
+import './updateAdminHandler.js'
+// yoki boshqa handlerlar ham shu tarzda
 
 let io
 

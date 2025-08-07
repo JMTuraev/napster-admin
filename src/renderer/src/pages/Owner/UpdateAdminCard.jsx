@@ -7,6 +7,7 @@ export default function UpdateAdminCard() {
   const [message, setMessage] = useState('')
   const [fileExists, setFileExists] = useState(false)
 
+  // Fayl mavjudligini tekshirish
   const checkUpdate = () => {
     window.api.invoke('check-admin-update-file').then((exists) => setFileExists(!!exists))
   }
@@ -16,11 +17,12 @@ export default function UpdateAdminCard() {
     return () => clearInterval(timer)
   }, [])
 
+  // Yuklab olish
   const handleDownload = async () => {
     setDownloading(true)
     setMessage('')
     try {
-      const url = 'https://github.com/JMTuraev/downloads/releases/download/v1.0.1/napster-admin.Setup.1.0.1.exe'
+      const url = 'https://github.com/JMTuraev/downloads/releases/download/v1.0.1/napster-user.Setup.1.0.1.exe'
       const fileName = 'admin-setup-2.2.1.exe'
       await window.api.invoke('download-admin-installer', { url, fileName })
       setMessage('✅ Файл успешно загружен!')
@@ -33,6 +35,7 @@ export default function UpdateAdminCard() {
     }
   }
 
+  // Obnovit
   const handleUpdateAdmin = async () => {
     setLoading(true)
     setMessage('')
@@ -49,6 +52,10 @@ export default function UpdateAdminCard() {
       setLoading(false)
     }
   }
+
+  // --- Tugmalar faolligini optimal boshqarish ---
+  const updateBtnDisabled = !fileExists || loading || downloading
+  const downloadBtnDisabled = downloading || loading
 
   return (
     <div style={{
@@ -95,14 +102,16 @@ export default function UpdateAdminCard() {
             alignItems: 'center',
             gap: 6,
             boxShadow: '0 1px 8px #ffe83a33',
-            cursor: downloading ? 'not-allowed' : 'pointer',
-            opacity: downloading ? 0.7 : 1
+            cursor: downloadBtnDisabled ? 'not-allowed' : 'pointer',
+            opacity: downloadBtnDisabled ? 0.7 : 1
           }}
-          disabled={downloading}
+          disabled={downloadBtnDisabled}
           onClick={handleDownload}
           title="Скачать"
         >
-          {downloading ? <Loader2 style={{ width: 19, height: 19 }} className="animate-spin" /> : <DownloadCloud style={{ width: 19, height: 19 }} />}
+          {downloading
+            ? <Loader2 style={{ width: 19, height: 19 }} className="animate-spin" />
+            : <DownloadCloud style={{ width: 19, height: 19 }} />}
           <span style={{ fontSize: 14, fontWeight: 700 }}>Скачать</span>
         </button>
       </div>
@@ -122,22 +131,22 @@ export default function UpdateAdminCard() {
           width: '100%',
           padding: '12px 0',
           borderRadius: 10,
-          background: !fileExists || loading
+          background: updateBtnDisabled
             ? '#343844'
             : 'linear-gradient(90deg,#ffb84b 0%,#fff600 100%)',
           color: '#282c39',
           fontWeight: 700,
           fontSize: 15,
           border: 'none',
-          cursor: !fileExists || loading ? 'not-allowed' : 'pointer',
-          boxShadow: !fileExists || loading ? 'none' : '0 2px 12px 0 #ffe98e66',
+          cursor: updateBtnDisabled ? 'not-allowed' : 'pointer',
+          boxShadow: updateBtnDisabled ? 'none' : '0 2px 12px 0 #ffe98e66',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: 8,
           transition: 'all .18s'
         }}
-        disabled={!fileExists || loading}
+        disabled={updateBtnDisabled}
         onClick={handleUpdateAdmin}
       >
         {loading
