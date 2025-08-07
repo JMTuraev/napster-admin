@@ -12,12 +12,14 @@ export default function BackgroundImageSelector({
 }) {
   return (
     <div style={{
-      flex: 1,
-      margin: '52px 40px 0 40px',
-      padding: '20px 26px',
-      background: 'rgba(22,24,44,0.88)',
-      borderRadius: 20,
-      boxShadow: '0 8px 28px #181b30cc',
+      width: '100%',
+      height: '100%',
+      background: 'none',
+      boxShadow: 'none',
+      border: 'none',
+      borderRadius: 0,
+      padding: 0,
+      margin: 0,
       display: 'flex',
       flexDirection: 'column',
       fontFamily: 'inherit'
@@ -34,7 +36,7 @@ export default function BackgroundImageSelector({
 
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(3, 1fr)', // 🔒 Faqat 3 ustun
+        gridTemplateColumns: 'repeat(3, 1fr)',
         gap: 16,
         marginBottom: 20,
         minHeight: 200

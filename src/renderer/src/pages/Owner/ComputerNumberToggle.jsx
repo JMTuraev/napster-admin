@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import socket from '../../socket' // ⚠️ to‘g‘ri yo‘lni aniqlang
+import socket from '../../socket' // ⚠️ To‘g‘ri path
 
 const SIZE_LABELS = ['XS', 'S', 'M', 'L', 'XL']
 const SIZE_VALUES = ['xs', 'sm', 'md', 'lg', 'xl']
@@ -15,7 +15,6 @@ export default function ComputerNumberToggle() {
   const [enabled, setEnabled] = useState(true)
   const [sizeIndex, setSizeIndex] = useState(2)
 
-  // 🔁 Bazadan holatni olish
   useEffect(() => {
     window.api.invoke('get-pc-number-ui-settings').then((data) => {
       if (data) {
@@ -26,29 +25,26 @@ export default function ComputerNumberToggle() {
     })
   }, [])
 
-  // 💾 O‘zgarishda yozish
   useEffect(() => {
     const payload = {
       show_number: enabled,
       font_size: SIZE_MAP[SIZE_VALUES[sizeIndex]]
     }
-
-    // 1) IPC orqali main db ga yoz
     window.api.invoke('update-pc-number-ui-settings', payload)
-
-    // 2) socket orqali barcha user.exe’ga yubor
     socket.emit('send-pc-number-ui-settings')
   }, [enabled, sizeIndex])
 
   return (
     <div style={{
-      maxWidth: 210,
-      minHeight: 220,
-      marginTop: 54,
-      background: 'rgba(20,24,44,0.97)',
-      borderRadius: 16,
-      padding: 20,
-      boxShadow: '0 8px 28px #181b30cc',
+      width: '100%',
+      height: '100%',
+      background: 'none',
+      boxShadow: 'none',
+      border: 'none',
+      padding: 0,
+      margin: 0,
+      minWidth: 0,
+      minHeight: 0,
       display: 'flex',
       flexDirection: 'column'
     }}>
@@ -59,12 +55,12 @@ export default function ComputerNumberToggle() {
       {/* 🔘 Toggle */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 18 }}>
         <span style={{ color: '#c4ceef', fontSize: 15 }}>Показывать номер ПК</span>
-        <label style={{ position: 'relative', cursor: 'pointer' }}>
+        <label style={{ position: 'relative', cursor: 'pointer', display: 'inline-block', width: 42, height: 22 }}>
           <input
             type="checkbox"
             checked={enabled}
             onChange={(e) => setEnabled(e.target.checked)}
-            style={{ opacity: 0, width: 0, height: 0 }}
+            style={{ opacity: 0, width: 0, height: 0, position: 'absolute' }}
           />
           <div style={{
             width: 42,

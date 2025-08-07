@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react'
-import { Loader2, Send, UploadCloud, DownloadCloud } from 'lucide-react'
+import { Loader2, DownloadCloud, UploadCloud, RefreshCcw } from 'lucide-react'
 
-export default function UpdateUserCard() {
+export default function UpdateAdminCard() {
   const [loading, setLoading] = useState(false)
   const [downloading, setDownloading] = useState(false)
   const [message, setMessage] = useState('')
   const [fileExists, setFileExists] = useState(false)
 
   const checkUpdate = () => {
-    window.api.invoke('check-update-file').then((exists) => setFileExists(!!exists))
+    window.api.invoke('check-admin-update-file').then((exists) => setFileExists(!!exists))
   }
   useEffect(() => {
     checkUpdate()
@@ -20,9 +20,9 @@ export default function UpdateUserCard() {
     setDownloading(true)
     setMessage('')
     try {
-      const url = 'https://github.com/JMTuraev/downloads/releases/download/v1.0.1/napster-user.Setup.1.0.1.exe'
-      const fileName = 'user-setup-2.2.1.exe'
-      await window.api.invoke('download-user-installer', { url, fileName })
+      const url = 'https://github.com/JMTuraev/downloads/releases/download/v1.0.1/napster-admin.Setup.1.0.1.exe'
+      const fileName = 'admin-setup-2.2.1.exe'
+      await window.api.invoke('download-admin-installer', { url, fileName })
       setMessage('✅ Файл успешно загружен!')
       checkUpdate()
     } catch (err) {
@@ -33,13 +33,13 @@ export default function UpdateUserCard() {
     }
   }
 
-  const handleSendUpdate = async () => {
+  const handleUpdateAdmin = async () => {
     setLoading(true)
     setMessage('')
     try {
-      const result = await window.api.invoke('send-user-update')
+      const result = await window.api.invoke('run-admin-update')
       if (result.success) {
-        setMessage(`✅ Отправлено ${result.count}`)
+        setMessage('✅ Обновление успешно запущено!')
       } else {
         setMessage(`❌ ${result.error}`)
       }
@@ -66,7 +66,6 @@ export default function UpdateUserCard() {
       flexDirection: 'column',
       alignItems: 'stretch'
     }}>
-      {/* ==== HEADER ==== */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -80,23 +79,22 @@ export default function UpdateUserCard() {
         justifyContent: 'space-between'
       }}>
         <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <UploadCloud style={{ width: 27, height: 27, color: '#4cb6f8' }} />
-          <span>Обновление пользователя</span>
+          <UploadCloud style={{ width: 27, height: 27, color: '#f7d94c' }} />
+          <span>Обновление администратора</span>
         </span>
-        {/* Скачать новый файл */}
         <button
           style={{
-            background: 'linear-gradient(90deg,#346aff 0%,#4be1fa 100%)',
+            background: 'linear-gradient(90deg,#fcb23e 0%,#f8e643 100%)',
             border: 'none',
             borderRadius: 8,
-            padding: '6px 11px 6px 11px',
-            color: '#fff',
+            padding: '6px 12px',
+            color: '#222',
             fontWeight: 700,
             fontSize: 15,
             display: 'flex',
             alignItems: 'center',
             gap: 6,
-            boxShadow: '0 1px 8px #37b3f944',
+            boxShadow: '0 1px 8px #ffe83a33',
             cursor: downloading ? 'not-allowed' : 'pointer',
             opacity: downloading ? 0.7 : 1
           }}
@@ -111,28 +109,28 @@ export default function UpdateUserCard() {
 
       <div style={{
         fontSize: 12,
-        color: '#a7b2c7',
+        color: '#d4bb74',
         marginBottom: 18,
         textAlign: 'center',
         marginTop: 2
       }}>
-        <span>Файл для обновления user</span>
+        <span>Файл для обновления admin</span>
       </div>
 
       <button
         style={{
           width: '100%',
-          padding: '11px 0',
+          padding: '12px 0',
           borderRadius: 10,
           background: !fileExists || loading
-            ? '#262b3f'
-            : 'linear-gradient(90deg,#357cfb 0%,#34d1fd 100%)',
-          color: '#fff',
+            ? '#343844'
+            : 'linear-gradient(90deg,#ffb84b 0%,#fff600 100%)',
+          color: '#282c39',
           fontWeight: 700,
           fontSize: 15,
           border: 'none',
           cursor: !fileExists || loading ? 'not-allowed' : 'pointer',
-          boxShadow: !fileExists || loading ? 'none' : '0 2px 12px 0 #37b3f966',
+          boxShadow: !fileExists || loading ? 'none' : '0 2px 12px 0 #ffe98e66',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -140,17 +138,17 @@ export default function UpdateUserCard() {
           transition: 'all .18s'
         }}
         disabled={!fileExists || loading}
-        onClick={handleSendUpdate}
+        onClick={handleUpdateAdmin}
       >
         {loading
           ? <Loader2 style={{ width: 21, height: 21, marginRight: 2 }} className="animate-spin" />
-          : <Send style={{ width: 21, height: 21, marginRight: 2 }} />}
-        {fileExists ? 'Отправить пользователям' : 'Файл не найден'}
+          : <RefreshCcw style={{ width: 21, height: 21, marginRight: 2 }} />}
+        {fileExists ? 'Обновить' : 'Файл не найден'}
       </button>
 
       <div style={{
         fontSize: 13,
-        color: '#8da1d1',
+        color: '#ddc56a',
         marginTop: 8,
         textAlign: 'center'
       }}>
@@ -161,7 +159,7 @@ export default function UpdateUserCard() {
 
       {message && (
         <div style={{
-          color: message.startsWith('✅') ? '#8cfca6' : '#fd8a93',
+          color: message.startsWith('✅') ? '#93fca6' : '#fd8a93',
           fontWeight: 600,
           fontSize: 14,
           marginTop: 13,
